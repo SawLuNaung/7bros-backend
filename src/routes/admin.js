@@ -45,10 +45,7 @@ router.post("/signin",  async (req, res) => {
                     
                     // Create JWT with both hasura role and admin role
                     const token = createHasuraJWT(existingUser[0].id, hasuraRole, adminRole)
-                        return res.status(200).json({
-                            token,
-                            message: null
-                        })
+                        return res.status(200).json({token})
                     }
                 }
             }
