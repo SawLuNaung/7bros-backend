@@ -5,8 +5,11 @@ const bcrypt = require("bcryptjs");
 const {createHasuraJWT} = require("../utils/helper");
 const {authenticateUserToken, authenticateAdminToken, authenticateSuperAdminToken} = require("../utils/userMiddleware");
 var router = express.Router();
+const {databaseConnectionString} = require("../utils/config");
 
 router.post("/signin",  async (req, res) => {
+    console.log("databaseConnectionString", databaseConnectionString);
+    
     try {
         const {phone, password} = req.body.input;
         if (phone && password) {
@@ -42,7 +45,10 @@ router.post("/signin",  async (req, res) => {
                     
                     // Create JWT with both hasura role and admin role
                     const token = createHasuraJWT(existingUser[0].id, hasuraRole, adminRole)
-                        return res.status(200).json({token})
+                        return res.status(200).json({
+                            token,
+                            message: null
+                        })
                     }
                 }
             }
