@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Web App</title>
+</head>
+<body>
+<h1> Web App</h1>
+<label for="bookingId">booking ID:</label>
+<input type="text" id="bookingId" required>
+
+<label for="status">status:</label>
+<input type="text" id="status" required>
+<br>
+
+<br>
+<button id="startSending">Start Sending Location</button>
+<button id="stopSending">Stop Sending Location</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+
+    const bookingId = document.getElementById('bookingId').value;
+    const status = document.getElementById('status').value;
+
+    document.getElementById('startSending').addEventListener('click', () => {
+
+        fetch("http://localhost:3000/trip/test", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({bookingId, status})
+        })
+    });
+
+    document.getElementById('stopSending').addEventListener('click', () => {
+        if (interval) {
+            clearInterval(interval);
+            interval = null;
+        }
+    });
+</script>
+</body>
+</html>

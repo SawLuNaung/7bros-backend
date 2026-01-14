@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Customer</title>
+</head>
+<body>
+<h1>Customer</h1>
+<div>
+  <label for="customerId">Customer ID: </label>
+  <input type="text" id="customerId" placeholder="Enter customer ID" />
+</div>
+<button onclick="joinRoom()">Join Room</button>
+<div id="location"></div>
+<div id="tripFee"></div>
+<div id="totalTraveled"></div>
+<div id="waitingTime"></div>
+<div id="duration"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io("http://13.212.113.174");
+
+  function joinRoom() {
+    const customerId = document.getElementById('customerId').value;
+
+    if (!customerId) {
+      alert('Please enter customer ID');
+      return;
+    }
+
+    socket.emit('joinRoom', customerId);
+
+    socket.on('driverLocationUpdate', (data) => {
+      const locationDiv = document.getElementById('location');
+      locationDiv.textContent = `Driver ${data.driverId} is at latitude: ${data.location.lat}, longitude: ${data.location.lng}`;
+    });
+
+    socket.on('driverTripInfoUpdate', (data) => {
+      const tripCostDiv = document.getElementById('tripFee');
+      tripCostDiv.textContent = `Driver ${data.driverId} trip cost: $${data.tripFee}`;
+      const totalTraveledDiv = document.getElementById('totalTraveled');
+      totalTraveledDiv.textContent = `Driver ${data.driverId} totalTraveled : ${data.totalTraveled}`;
+      const waitingTimeDiv = document.getElementById('waitingTime');
+      waitingTimeDiv.textContent = `Driver ${data.driverId} waitingTime : ${data.waitingTime}`;
+      const durationDiv = document.getElementById('duration');
+      durationDiv.textContent = `Driver ${data.driverId} duration : ${data.duration}`;
+
+    });
+  }
+</script>
+</body>
+</html>

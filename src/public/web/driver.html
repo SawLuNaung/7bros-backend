@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Web App</title>
+</head>
+<body>
+<h1>Driver Web App</h1>
+<label for="driverId">Driver ID:</label>
+<input type="text" id="driverId" required>
+<br>
+<label for="driverName">Driver Name:</label>
+<input type="text" id="driverName" required>
+<br>
+<label for="driverPhone">Driver Phone:</label>
+<input type="text" id="driverPhone" required>
+<br>
+<label for="vehicleNo">Vehicle Number:</label>
+<input type="text" id="vehicleNo" required>
+<br>
+<button id="startSending">Start Sending Location</button>
+<button id="stopSending">Stop Sending Location</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let interval;
+
+    document.getElementById('startSending').addEventListener('click', () => {
+        const driverId = document.getElementById('driverId').value;
+
+
+        if (!interval) {
+            interval = setInterval(() => {
+                const latitude = 16.848462781702132
+                const longitude = 96.12206740371464
+                const speed = (Math.random() * 3);
+
+                socket.emit('driverLocation', {driver: {id: driverId,name:"test driver",vehicle_number:"efefe", vehicle_model:"efe", phone:"0912345678", driver_id: "0001", fcm_token:"cIiLAlIrQ-qYxVgOZZ9wpv:APA91bF4IGLf4o4lgH1dz7eM8TOtN2FOUzWagradsGeHc9bx1T1WHfgplX2EKYNyVznnZDoTya9Ny0jnhkl6tnyocF9Ma8ceURP7KbjCpjsCRVwuedK_49nyiA4Kfkwc9gHErKZpJ-oJ", "profile_picture_url": "https://axra.sgp1.digitaloceanspaces.com/Test/users/2fcb4f13-86e3-4df5-b93d-06fb532f43ff.jpg"}, gps: {latitude, longitude, speed}});
+            }, 1000);
+        }
+    });
+
+    document.getElementById('stopSending').addEventListener('click', () => {
+        if (interval) {
+            clearInterval(interval);
+            interval = null;
+        }
+    });
+</script>
+</body>
+</html>

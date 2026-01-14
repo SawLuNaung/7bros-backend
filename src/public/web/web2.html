@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> List</title>
+</head>
+<body>
+<h1>Driver List</h1>
+<ul id="driversList"></ul>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    socket.emit('joinTrip', {bookingId:  "35cde827-8447-4fa2-8c56-c9c127e7a9e3", userType:"customer"});
+
+    socket.on('bookingStatus', (data) => {
+        const driversList = document.getElementById('driversList');
+        driversList.innerHTML = '';
+
+        const listItem = document.createElement('li');
+        listItem.textContent = `${JSON.stringify(data)}`;
+        driversList.appendChild(listItem);
+    });
+</script>
+</body>
+</html>

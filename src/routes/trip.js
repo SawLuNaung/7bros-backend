@@ -1,0 +1,740 @@
+var express = require('express');
+const knex = require("../utils/knex");
+const {authenticateUserToken, authenticateDriverToken} = require("../utils/userMiddleware");
+const {
+    reverseGeocode,
+    generateTripId,
+    getDecimalPlaces,
+    calculateCommissionFee,
+    calculateDriverReceivedAmount, generateTransactionNumber, findNearestDriver, sendNoti, calculateDistanceFee
+} = require("../utils/helper");
+var router = express.Router();
+
+// router.post("/start", authenticateDriverToken, async (req, res) => {
+//     try {
+//         const user_id = req.user_id
+//         const {start_lat, start_lng} = req.body.input
+//         const geoData = await reverseGeocode(start_lat, start_lng);
+//         const createdTrip = await knex('trips').insert({
+//             driver_id: user_id,
+//             status: "driving",
+//             start_lat,
+//             start_lng,
+//             start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+//             trip_id: generateTripId()
+//         }).returning('id')
+//         await knex('drivers').update({
+//             status: "on trip"
+//         }).where("id", user_id)
+//         return res.status(201).json({
+//             message: "trip started",
+//             trip_id: createdTrip[0].id
+//         })
+//     } catch (e) {
+//         console.log(e)
+//         return res.status(500).json(e)
+//     }
+// })
+
+router.post("/start", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+        const {start_lat, start_lng} = req.body.input
+        console.log("=== START TRIP ===");
+        console.log("Driver:", user_id, "Coords:", start_lat, start_lng);
+        
+        // Load fee configurations
+        const feeConfigs = await knex('fee_configs').first()
+        if (!feeConfigs) {
+            return res.status(500).json({message: "Fee configuration not found"})
+        }
+        console.log("Fee configs loaded:", feeConfigs);
+        
+        const geoData = await reverseGeocode(start_lat, start_lng);
+        const createdTrip = await knex('trips').insert({
+            driver_id: user_id,
+            status: "driving",
+            start_lat,
+            start_lng,
+            start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+            trip_id: generateTripId(),
+            // Set initial fee values
+            initial_fee: feeConfigs.initial_fee,
+            commission_rate: feeConfigs.commission_rate,
+            free_waiting_minute: feeConfigs.free_waiting_minute,
+            waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
+            distance_fee_per_km: feeConfigs.distance_fee_per_km,
+            platform_fee: feeConfigs.platform_fee,
+            insurance_fee: feeConfigs.insurance_fee,
+            commission_rate_type: feeConfigs.commission_rate_type
+        }).returning('*')
+        
+        console.log("Trip created with ID:", createdTrip[0].id, "Status: driving");
+        
+        await knex('drivers').update({
+            status: "on trip"
+        }).where("id", user_id)
+        
+        return res.status(201).json({
+            message: "trip started",
+            trip_id: createdTrip[0].id
+        })
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e)
+    }
+})
+
+
+router.post("/start-booked-trip", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+        const {start_lat, start_lng} = req.body.input
+        const geoData = await reverseGeocode(start_lat, start_lng);
+
+        const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "on trip").first()
+        if (activeBooking) {
+            const createdTrip = await knex('trips').insert({
+                driver_id: user_id,
+                status: "driving",
+                start_lat,
+                start_lng,
+                start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+                trip_id: generateTripId()
+            }).returning('id')
+            await knex('bookings').update({
+                trip_id: createdTrip[0].id
+            }).where("id", activeBooking.id)
+            await knex('drivers').update({
+                status: "on trip"
+            }).where("id", user_id)
+            return res.status(201).json({
+                message: "trip started",
+                trip_id: createdTrip[0].id
+            })
+        } else {
+            return res.status(400).json({message: "You have no active booking"})
+        }
+
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e)
+    }
+})
+
+
+router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+        const {
+            end_lat,
+            end_lng,
+            extra_list,
+            location_points,
+            extra_fee,
+            duration,
+            waiting_time,
+            distance,
+            gps_gaps,
+            gps_gap_details,
+        } = req.body.input;
+        const parsed = {
+            distance: Number(distance),
+            duration: Number(duration),
+            waiting_time: Number(waiting_time),
+            extra_fee: Number(extra_fee),
+        }
+        if ([parsed.distance, parsed.duration, parsed.waiting_time, parsed.extra_fee].some(v => Number.isNaN(v))) {
+            return res.status(400).json({message: "invalid numeric fields"})
+        }
+        const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "on trip").first()
+        if (activeBooking) {
+            const feeConfigs = await knex('fee_configs').first()
+            const geoData = (end_lat != null && end_lng != null) ? await reverseGeocode(end_lat, end_lng) : {results: []};
+
+            const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
+
+            const distanceFee = calculateDistanceFee(parsed.distance, feeConfigs)
+
+
+            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
+            const customer_total = Number(feeConfigs.initial_fee) + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
+            const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
+            const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
+
+            const updatedTrip = await knex('trips').update({
+                end_lat,
+                end_lng,
+                end_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+                commission_rate: feeConfigs.commission_rate,
+                free_waiting_minute: feeConfigs.free_waiting_minute,
+                waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
+                distance_fee_per_km: feeConfigs.distance_fee_per_km,
+                initial_fee: feeConfigs.initial_fee,
+                platform_fee: feeConfigs.platform_fee,
+                insurance_fee: feeConfigs.insurance_fee,
+                commission_rate_type: feeConfigs.commission_rate_type,
+                distance_fee: distanceFee,
+                commission_fee,
+                driver_received_amount: driver_received_amount,
+                extra_fee: parsed.extra_fee,
+                waiting_fee,
+                total_amount: customer_total,
+                distance_km: parsed.distance,
+                duration_sec: parsed.duration,
+                waiting_time_sec: parsed.waiting_time,
+                status: "finished",
+                extra_list,
+                location_points,
+                gps_gaps,
+                gps_gap_details,
+                ended_at: new Date()
+            }).where('id', activeBooking.trip_id).returning('id')
+            await knex('bookings').update({
+                status: "completed",
+            }).where("id", activeBooking.id)
+
+            //add transaction data
+            const trax = await knex('driver_transactions').insert({
+                driver_id: user_id,
+                amount: commission_fee,
+                transaction_type: "commission",
+                transaction_number: generateTransactionNumber(),
+                status: "completed",
+            }).returning('id');
+            await knex('commissions').insert({
+                driver_transaction_id: trax[0].id,
+                commission_rate: feeConfigs.commission_rate,
+                commission_rate_type: feeConfigs.commission_rate_type,
+                trip_id: activeBooking.trip_id
+            })
+            const driver = await knex('drivers').where('id', user_id)
+
+            const updatedDriver = await knex('drivers').update({
+                status: "active",
+                balance: Number(driver[0].balance) - commission_fee,
+            }).where("id", user_id).returning('fcm_token')
+
+            const customer = await knex('customers').where('id', activeBooking.customer_id).first()
+            req.io.to(activeBooking.id).emit('bookingStatus', {
+                bookingId: activeBooking.id,
+                status: "completed"
+            });
+            //add transaction data
+            await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+            await sendNoti("Ride Finished", `Your ride is finished. Thanks for riding with Go Tuk Tuk`, 'default', customer.fcm_token)
+
+            await knex('driver_notifications').insert({
+                driver_id: user_id,
+                title: "Trip Ended",
+                body: `Your trip is complete. You earned ${driver_received_amount} ks`,
+                notification_type: "trip",
+                detail_id: activeBooking.trip_id
+            })
+            return res.status(201).json({
+                message: "trip ended",
+                trip_id: updatedTrip[0].id
+            })
+        } else {
+            return res.status(400).json({message: "You have no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+// router.post("/end", authenticateDriverToken, async (req, res) => {
+//     try {
+//         const user_id = req.user_id
+//         const {
+//             end_lat,
+//             end_lng,
+//             extra_list,
+//             location_points,
+//             extra_fee,
+//             duration,
+//             waiting_time,
+//             distance,
+//             gps_gaps,
+//             gps_gap_details,
+//         } = req.body.input;
+//         const parsed = {
+//             distance: Number(distance),
+//             duration: Number(duration),
+//             waiting_time: Number(waiting_time),
+//             extra_fee: Number(extra_fee),
+//         }
+//         if ([parsed.distance, parsed.duration, parsed.waiting_time, parsed.extra_fee].some(v => Number.isNaN(v))) {
+//             return res.status(400).json({message: "invalid numeric fields"})
+//         }
+
+//         const activeTrip = await knex('trips').where("driver_id", user_id).whereIn('status', ['pending', 'driving', "waiting"]).first()
+//         console.log(activeTrip);
+//         if (activeTrip) {
+//             const feeConfigs = await knex('fee_configs').first()
+//             const geoData = (end_lat != null && end_lng != null) ? await reverseGeocode(end_lat, end_lng) : {results: []};
+
+//             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
+
+//             const distanceFee = calculateDistanceFee(parsed.distance, feeConfigs)
+
+//             const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
+//             const customer_total = Number(feeConfigs.initial_fee) + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
+//             const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
+//             const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
+
+//             const updatedTrip = await knex('trips').update({
+//                 end_lat,
+//                 end_lng,
+//                 end_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+//                 commission_rate: feeConfigs.commission_rate,
+//                 free_waiting_minute: feeConfigs.free_waiting_minute,
+//                 waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
+//                 distance_fee_per_km: feeConfigs.distance_fee_per_km,
+//                 initial_fee: feeConfigs.initial_fee,
+//                 platform_fee: feeConfigs.platform_fee,
+//                 insurance_fee: feeConfigs.insurance_fee,
+//                 commission_rate_type: feeConfigs.commission_rate_type,
+//                 distance_fee: distanceFee,
+//                 commission_fee,
+//                 driver_received_amount: driver_received_amount,
+//                 extra_fee: parsed.extra_fee,
+//                 waiting_fee,
+//                 total_amount: customer_total,
+//                 distance_km: parsed.distance,
+//                 duration_sec: parsed.duration,
+//                 waiting_time_sec: parsed.waiting_time,
+//                 status: "finished",
+//                 extra_list,
+//                 location_points,
+//                 gps_gaps,
+//                 gps_gap_details,
+//                 ended_at: new Date()
+//             }).where('id', activeTrip.id).returning('id')
+
+//             //add transaction data
+//             const trax = await knex('driver_transactions').insert({
+//                 driver_id: user_id,
+//                 amount: commission_fee,
+//                 transaction_type: "commission",
+//                 transaction_number: generateTransactionNumber(),
+//                 status: "completed",
+//             }).returning('id');
+//             await knex('commissions').insert({
+//                 driver_transaction_id: trax[0].id,
+//                 commission_rate: feeConfigs.commission_rate,
+//                 commission_rate_type: feeConfigs.commission_rate_type,
+//                 trip_id: activeTrip.id
+//             })
+//             const driver = await knex('drivers').where('id', user_id)
+
+//             const updatedDriver = await knex('drivers').update({
+//                 status: "active",
+//                 balance: Number(driver[0].balance) - commission_fee,
+//             }).where("id", user_id).returning('fcm_token')
+
+//             //add transaction data
+//             await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+
+//             await knex('driver_notifications').insert({
+//                 driver_id: user_id,
+//                 title: "Trip Ended",
+//                 body: `Your trip is complete. You earned ${driver_received_amount} ks`,
+//                 notification_type: "trip",
+//                 detail_id: activeTrip.id
+//             })
+//             return res.status(201).json({
+//                 message: "trip ended",
+//                 trip_id: updatedTrip[0].id
+//             })
+//         } else {
+//             return res.status(400).json({message: "You have no active booking"})
+//         }
+//     } catch (e) {
+//         console.log(e)
+//         return res.status(500).json(e.toString())
+//     }
+// })
+
+router.post("/end", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+        console.log("=== END TRIP DEBUG ===");
+        console.log("Driver ID:", user_id);
+        
+        const {
+            end_lat,
+            end_lng,
+            extra_list,
+            location_points,
+            extra_fee,
+            duration,
+            waiting_time,
+            distance,
+            gps_gaps,
+            gps_gap_details,
+        } = req.body.input;
+        
+        const parsed = {
+            distance: Number(distance),
+            duration: Number(duration),
+            waiting_time: Number(waiting_time),
+            extra_fee: Number(extra_fee),
+        }
+        
+        if ([parsed.distance, parsed.duration, parsed.waiting_time, parsed.extra_fee].some(v => Number.isNaN(v))) {
+            return res.status(400).json({message: "invalid numeric fields"})
+        }
+
+        // Check active trip
+        const activeTrip = await knex('trips').where("driver_id", user_id).whereIn('status', ['pending', 'driving', "waiting"]).first()
+        console.log("Active trip found:", activeTrip);
+        
+        if (activeTrip) {
+            console.log("Proceeding to end trip...");
+            
+            const feeConfigs = await knex('fee_configs').first()
+            if (!feeConfigs) {
+                return res.status(500).json({message: "Fee configuration not found"})
+            }
+            
+            const geoData = (end_lat != null && end_lng != null) ? await reverseGeocode(end_lat, end_lng) : {results: []};
+
+            // Calculate waiting fee (only charge after free waiting minutes)
+            const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
+
+            // Calculate distance fee
+            const distanceFee = calculateDistanceFee(parsed.distance, feeConfigs)
+
+            // Calculate totals
+            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
+            const customer_total = Number(feeConfigs.initial_fee) + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
+            const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
+            const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
+
+            console.log("Calculated fees:", {
+                waiting_fee,
+                distanceFee,
+                driver_total,
+                customer_total,
+                commission_fee,
+                driver_received_amount
+            });
+
+            // Update trip with completed data
+            const updatedTrip = await knex('trips').update({
+                end_lat,
+                end_lng,
+                end_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+                commission_rate: feeConfigs.commission_rate,
+                free_waiting_minute: feeConfigs.free_waiting_minute,
+                waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
+                distance_fee_per_km: feeConfigs.distance_fee_per_km,
+                initial_fee: feeConfigs.initial_fee,
+                platform_fee: feeConfigs.platform_fee,
+                insurance_fee: feeConfigs.insurance_fee,
+                commission_rate_type: feeConfigs.commission_rate_type,
+                distance_fee: distanceFee,
+                commission_fee,
+                driver_received_amount: driver_received_amount,
+                extra_fee: parsed.extra_fee,
+                waiting_fee,
+                total_amount: customer_total,
+                distance_km: parsed.distance,
+                duration_sec: parsed.duration,
+                waiting_time_sec: parsed.waiting_time,
+                status: "finished",
+                extra_list,
+                location_points,
+                gps_gaps,
+                gps_gap_details,
+                ended_at: new Date()
+            }).where('id', activeTrip.id).returning('id')
+
+            // Add transaction data for commission
+            const trax = await knex('driver_transactions').insert({
+                driver_id: user_id,
+                amount: commission_fee,
+                transaction_type: "commission",
+                transaction_number: generateTransactionNumber(),
+                status: "completed",
+            }).returning('id');
+            
+            await knex('commissions').insert({
+                driver_transaction_id: trax[0].id,
+                commission_rate: feeConfigs.commission_rate,
+                commission_rate_type: feeConfigs.commission_rate_type,
+                trip_id: activeTrip.id
+            })
+
+            // Update driver status and balance
+            const driver = await knex('drivers').where('id', user_id).first()
+            const updatedDriver = await knex('drivers').update({
+                status: "active",
+                balance: Number(driver.balance) - commission_fee,
+            }).where("id", user_id).returning('*')
+
+            // Send notification only if FCM token exists
+            if (updatedDriver[0] && updatedDriver[0].fcm_token && updatedDriver[0].fcm_token.length > 5) {
+                await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+            } else {
+                console.log("No valid FCM token found for driver, skipping notification");
+            }
+
+            // Add driver notification to database
+            await knex('driver_notifications').insert({
+                driver_id: user_id,
+                title: "Trip Ended",
+                body: `Your trip is complete. You earned ${driver_received_amount} ks`,
+                notification_type: "trip",
+                detail_id: activeTrip.id
+            })
+
+            console.log("Trip ended successfully:", updatedTrip[0].id);
+            return res.status(201).json({
+                message: "trip ended",
+                trip_id: updatedTrip[0].id
+            })
+        } else {
+            console.log("No active trip found with status in ['pending', 'driving', 'waiting']");
+            return res.status(400).json({message: "You have no active trip"})
+        }
+    } catch (e) {
+        console.log("Error in end trip:", e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+router.post("/book", authenticateUserToken, async (req, res) => {
+    try {
+
+        const {start_lat, start_lng, end_lat, end_lng, start_location, end_location} = req.body.input
+
+        const user_id = req.user_id
+
+        if (start_lat && start_lng && end_lat && end_lng) {
+            const existedTrip = await knex('bookings').where('customer_id', user_id).whereIn('status', ['pending', 'accepted', "connected", "on trip"]).first()
+            if (existedTrip) {
+                return res.status(400).json({message: "You already have active booking"})
+            } else {
+                const bookedTrip = await knex('bookings').insert({
+                    customer_id: user_id,
+                    start_lat,
+                    start_lng,
+                    end_lat,
+                    end_lng,
+                    start_location,
+                    end_location,
+                    booking_id: generateTripId()
+                }).returning('id')
+
+                return res.status(201).json({
+                    message: "trip booked",
+                    id: bookedTrip[0].id
+                })
+            }
+        } else {
+            return res.status(400).json({message: "missing required fields"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+router.post("/search-driver", authenticateUserToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+
+        const existedBooking = await knex('bookings').where('customer_id', user_id).whereIn('status', ['pending']).first()
+        if (existedBooking) {
+            const nearbyDriver = findNearestDriver(existedBooking.start_lat, existedBooking.start_lng)
+
+            const driver = await knex('drivers').where('id', nearbyDriver.driver.id).first()
+
+            if (nearbyDriver && driver.status === "active" && driver.is_online === true) {
+                await knex('bookings').update({
+                    driver_id: nearbyDriver.driver.id,
+                    status: "connected"
+                }).where("id", existedBooking.id)
+                await knex('drivers').update({
+                    status: "busy"
+                }).where('id', nearbyDriver.driver.id)
+
+                req.io.to(driver.id).emit('bookingRequest', {
+                    driverId: driver.id,
+                });
+
+                req.io.to(existedBooking.id).emit('bookingStatus', {
+                    bookingId: existedBooking.id,
+                    status: "connected"
+                });
+
+                // await sendNoti("Customer Booking", "You received new booking", "booking", driver.fcm_token)
+                await sendNoti("ခရီးသည် App အော်ဒါ", "ခရီးသည် App မှ အော်ဒါ သစ်ရရှိပါသည်", "booking", driver.fcm_token)
+
+                return res.status(200).json({success: true, message: "connected with driver"})
+            } else {
+                return res.status(200).json({success: false, message: "no nearby driver found"})
+            }
+        } else {
+            return res.status(400).json({message: "You have no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+router.post("/accept", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+
+        const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "connected").first()
+        if (activeBooking) {
+
+            req.io.to(activeBooking.id).emit('bookingStatus', {
+                bookingId: activeBooking.id,
+                status: "accepted"
+            });
+
+            await knex('bookings').where({id: activeBooking.id}).update({status: 'accepted'});
+
+            const customer = await knex('customers').where('id', activeBooking.customer_id).first()
+
+            await sendNoti("Booking Accepted", "Driving to your location", "booking", customer.fcm_token)
+
+
+            return res.status(201).json({
+                message: "booking accepted",
+            })
+        } else {
+            return res.status(400).json({message: "no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+router.post("/pickup", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+
+        const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "accepted").first()
+        if (activeBooking) {
+
+            await knex('bookings').where({id: activeBooking.id}).update({status: 'on trip'});
+
+
+            req.io.to(activeBooking.id).emit('bookingStatus', {
+                bookingId: activeBooking.id,
+                status: "on trip"
+            });
+
+            const customer = await knex('customers').where('id', activeBooking.customer_id).first()
+
+            await sendNoti("Customer Picked Up", "Driving to your destination", "booking", customer.fcm_token)
+
+
+            return res.status(201).json({
+                message: "customer picked up",
+            })
+        } else {
+            return res.status(400).json({message: "no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+router.post("/reject", authenticateDriverToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+
+        const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "connected").first()
+        if (activeBooking) {
+
+            req.io.to(activeBooking.id).emit('bookingStatus', {
+                bookingId: activeBooking.id,
+                status: "pending"
+            });
+
+            await knex('drivers').update({
+                status: "active"
+            }).where('id', activeBooking.driver_id)
+
+            await knex('bookings').update({
+                driver_id: null,
+                status: "pending"
+            }).where("id", activeBooking.id)
+
+            return res.status(201).json({
+                message: "booking rejected",
+            })
+        } else {
+            return res.status(400).json({message: "no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+router.post("/cancel", authenticateUserToken, async (req, res) => {
+    try {
+        const user_id = req.user_id
+
+        const activeBooking = await knex('bookings').where('customer_id', user_id).whereIn('status', ['pending', 'connected', 'accepted']).first()
+        if (activeBooking) {
+
+            req.io.to(activeBooking.driver_id).emit('bookingRequest', {
+                driverId: activeBooking.driver_id,
+            });
+
+
+            await knex('bookings').update({
+                status: "canceled"
+            }).where("id", activeBooking.id)
+
+            // await sendNoti("Booking Canceled", "Customer canceled the booking", "booking", driver.fcm_token)
+
+            if (activeBooking.status !== "pending") {
+                const updatedDriver = await knex('drivers').update({
+                    status: "active"
+                }).where('id', activeBooking.driver_id).returning('fcm_token')
+                updatedDriver[0].fcm_token.length > 5 && await sendNoti("ခရီးသည် App အော်ဒါ", "ခရီးသည် မှ အော်ဒါ ကိုပယ်ဖြတ်လိုက်ပါသည်", "booking", updatedDriver[0].fcm_token)
+            }
+
+            return res.status(201).json({
+                message: "booking canceled by customer",
+                id: activeBooking.id
+            })
+        } else {
+            return res.status(400).json({message: "no active booking"})
+        }
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+router.post("/test", async (req, res) => {
+    try {
+        await sendNoti("ခရီးသည် App အော်ဒါ", "ခရီးသည် App မှ အော်ဒါ သစ်ရရှိပါသည်", "transaction", "e2RzbkmHSCa5PnLvlAe6oz:APA91bETABuEfVhpZJkDhHmGKtUCyi6v1uc_fvVCNkx_rXzR2VT2S7t40zlFUGzE-MyJbmenBpl_Ic2BrDNpw7JzO2s8otpghMO3BPHv11GcLMAuiD0KLX4")
+        return res.json("efef")
+    } catch (e) {
+        console.log(e)
+        return res.status(500).json(e.toString())
+    }
+})
+
+
+module.exports = router;

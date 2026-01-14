@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver List</title>
+</head>
+<body>
+<h1>Driver List</h1>
+<ul id="driversList"></ul>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    socket.on('allDriverLocation', (drivers) => {
+        const driversList = document.getElementById('driversList');
+        driversList.innerHTML = '';
+
+        drivers.forEach(data => {
+            const {driver, gps} = data;
+            const listItem = document.createElement('li');
+            listItem.textContent = `Driver: ${JSON.stringify(driver)}, GPS: ${JSON.stringify(gps)},`;
+            driversList.appendChild(listItem);
+        });
+    });
+</script>
+</body>
+</html>

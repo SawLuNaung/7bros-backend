@@ -1,0 +1,2806 @@
+{
+  "resource_version": 87,
+  "metadata": {
+    "version": 3,
+    "sources": [
+      {
+        "name": "default",
+        "kind": "postgres",
+        "tables": [
+          {
+            "table": {
+              "name": "admins",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "top_ups",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "approved_admin_id",
+                    "table": {
+                      "name": "top_ups",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "app_configs",
+              "schema": "public"
+            },
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "in_maintenance",
+                    "customer_android_app_link",
+                    "customer_android_app_version",
+                    "customer_ios_app_link",
+                    "customer_ios_app_version",
+                    "driver_android_app_link",
+                    "driver_android_app_version",
+                    "driver_ios_app_version",
+                    "maintenance_text",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "in_maintenance",
+                    "customer_android_app_link",
+                    "customer_android_app_version",
+                    "customer_ios_app_link",
+                    "customer_ios_app_version",
+                    "driver_android_app_link",
+                    "driver_android_app_version",
+                    "driver_ios_app_version",
+                    "maintenance_text",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "public",
+                "permission": {
+                  "columns": [
+                    "in_maintenance",
+                    "customer_android_app_link",
+                    "customer_android_app_version",
+                    "customer_ios_app_link",
+                    "customer_ios_app_version",
+                    "driver_android_app_link",
+                    "driver_android_app_version",
+                    "driver_ios_app_version",
+                    "maintenance_text",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "booking_status",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "bookings",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "status",
+                    "table": {
+                      "name": "bookings",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "public",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "bookings",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "booking_status",
+                "using": {
+                  "foreign_key_constraint_on": "status"
+                }
+              },
+              {
+                "name": "customer",
+                "using": {
+                  "foreign_key_constraint_on": "customer_id"
+                }
+              },
+              {
+                "name": "driver",
+                "using": {
+                  "foreign_key_constraint_on": "driver_id"
+                }
+              },
+              {
+                "name": "trip",
+                "using": {
+                  "foreign_key_constraint_on": "trip_id"
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "duration",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "fare",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "booking_id",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "location_points",
+                    "start_location",
+                    "status",
+                    "created_at",
+                    "ended_at",
+                    "started_at",
+                    "updated_at",
+                    "customer_id",
+                    "driver_id",
+                    "id",
+                    "trip_id"
+                  ],
+                  "filter": {
+                    "customer_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "duration",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "fare",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "booking_id",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "location_points",
+                    "start_location",
+                    "status",
+                    "created_at",
+                    "ended_at",
+                    "started_at",
+                    "updated_at",
+                    "customer_id",
+                    "driver_id",
+                    "id",
+                    "trip_id"
+                  ],
+                  "filter": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "commission_rate_types",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "commissions",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "commission_rate_type",
+                    "table": {
+                      "name": "commissions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "configs",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "commission_rate_type",
+                    "table": {
+                      "name": "fee_configs",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "trips",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "commission_rate_type",
+                    "table": {
+                      "name": "trips",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "commissions",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "commissionRateTypeByCommissionRateType",
+                "using": {
+                  "foreign_key_constraint_on": "commission_rate_type"
+                }
+              },
+              {
+                "name": "driver_transaction",
+                "using": {
+                  "foreign_key_constraint_on": "driver_transaction_id"
+                }
+              },
+              {
+                "name": "trip",
+                "using": {
+                  "foreign_key_constraint_on": "trip_id"
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "commission_rate",
+                    "commission_rate_type",
+                    "driver_transaction_id",
+                    "id",
+                    "trip_id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "customers",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "bookings",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "customer_id",
+                    "table": {
+                      "name": "bookings",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "trips",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "customer_id",
+                    "table": {
+                      "name": "trips",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "email",
+                    "fcm_token",
+                    "name",
+                    "password",
+                    "phone",
+                    "profile_picture_url",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {
+                    "id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "email",
+                    "fcm_token",
+                    "name",
+                    "password",
+                    "phone",
+                    "profile_picture_url",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ],
+            "update_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "email",
+                    "fcm_token",
+                    "name",
+                    "password",
+                    "phone",
+                    "profile_picture_url",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {
+                    "id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "check": null
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "driver_notifications",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "driver",
+                "using": {
+                  "foreign_key_constraint_on": "driver_id"
+                }
+              },
+              {
+                "name": "notificationTypeByNotificationType",
+                "using": {
+                  "foreign_key_constraint_on": "notification_type"
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "body",
+                    "detail_id",
+                    "notification_type",
+                    "title",
+                    "created_at",
+                    "updated_at",
+                    "driver_id",
+                    "id"
+                  ],
+                  "filter": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "driver_statuses",
+              "schema": "public"
+            },
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "driver_transactions",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "commission",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_transaction_id",
+                    "table": {
+                      "name": "commissions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "driver",
+                "using": {
+                  "foreign_key_constraint_on": "driver_id"
+                }
+              },
+              {
+                "name": "top_up",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_transaction_id",
+                    "table": {
+                      "name": "top_ups",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "transactionTypeByTransactionType",
+                "using": {
+                  "foreign_key_constraint_on": "transaction_type"
+                }
+              },
+              {
+                "name": "transaction_status",
+                "using": {
+                  "foreign_key_constraint_on": "status"
+                }
+              }
+            ],
+            "insert_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "check": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "columns": [
+                    "amount",
+                    "status",
+                    "transaction_number",
+                    "transaction_type",
+                    "created_at",
+                    "updated_at",
+                    "driver_id",
+                    "id"
+                  ]
+                },
+                "comment": ""
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "amount",
+                    "status",
+                    "transaction_number",
+                    "transaction_type",
+                    "created_at",
+                    "updated_at",
+                    "driver_id",
+                    "id"
+                  ],
+                  "filter": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "drivers",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "bookings",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_id",
+                    "table": {
+                      "name": "bookings",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "driver_notifications",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_id",
+                    "table": {
+                      "name": "driver_notifications",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "driver_transactions",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_id",
+                    "table": {
+                      "name": "driver_transactions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "trips",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "driver_id",
+                    "table": {
+                      "name": "trips",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "driver_id",
+                    "id",
+                    "name",
+                    "phone",
+                    "profile_picture_url",
+                    "vehicle_model",
+                    "vehicle_number"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "is_online",
+                    "verified",
+                    "balance",
+                    "address",
+                    "driver_id",
+                    "driving_license_number",
+                    "fcm_token",
+                    "name",
+                    "nrc_number",
+                    "password",
+                    "phone",
+                    "profile_picture_url",
+                    "status",
+                    "vehicle_model",
+                    "vehicle_number",
+                    "birth_date",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {
+                    "id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ],
+            "update_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "is_online",
+                    "balance",
+                    "address",
+                    "driver_id",
+                    "driving_license_number",
+                    "fcm_token",
+                    "name",
+                    "nrc_number",
+                    "password",
+                    "phone",
+                    "profile_picture_url",
+                    "status",
+                    "vehicle_model",
+                    "vehicle_number",
+                    "birth_date",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {
+                    "id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "check": null
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "extra_fees",
+              "schema": "public"
+            },
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "amount",
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "amount",
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "fee_configs",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "commissionRateTypeByCommissionRateType",
+                "using": {
+                  "foreign_key_constraint_on": "commission_rate_type"
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "free_waiting_minute",
+                    "commission_rate",
+                    "distance_fee_per_km",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "waiting_fee_per_minute",
+                    "id",
+                    "commission_rate_type"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "free_waiting_minute",
+                    "commission_rate",
+                    "distance_fee_per_km",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "waiting_fee_per_minute",
+                    "id",
+                    "commission_rate_type"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "public",
+                "permission": {
+                  "columns": [
+                    "free_waiting_minute",
+                    "commission_rate",
+                    "distance_fee_per_km",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "waiting_fee_per_minute",
+                    "id",
+                    "commission_rate_type"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "notification_types",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "driver_notifications",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "notification_type",
+                    "table": {
+                      "name": "driver_notifications",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "payment_methods",
+              "schema": "public"
+            },
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "account_name",
+                    "account_number",
+                    "description",
+                    "logo_url",
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "disabled",
+                    "account_name",
+                    "account_number",
+                    "description",
+                    "logo_url",
+                    "name",
+                    "id"
+                  ],
+                  "filter": {
+                    "name": {
+                      "_neq": "Cash"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "top_ups",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "admin",
+                "using": {
+                  "foreign_key_constraint_on": "approved_admin_id"
+                }
+              },
+              {
+                "name": "driver_transaction",
+                "using": {
+                  "foreign_key_constraint_on": "driver_transaction_id"
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "payment_method",
+                    "receipt_photo_url",
+                    "approved_admin_id",
+                    "driver_transaction_id",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "transaction_status",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "driver_transactions",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "status",
+                    "table": {
+                      "name": "driver_transactions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "created_at",
+                    "updated_at",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "transaction_types",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "driver_transactions",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "transaction_type",
+                    "table": {
+                      "name": "driver_transactions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "trip_status",
+              "schema": "public"
+            },
+            "array_relationships": [
+              {
+                "name": "trips",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "status",
+                    "table": {
+                      "name": "trips",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "name",
+                    "id"
+                  ],
+                  "filter": {}
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "trips",
+              "schema": "public"
+            },
+            "object_relationships": [
+              {
+                "name": "booking",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "trip_id",
+                    "table": {
+                      "name": "bookings",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "commissionRateTypeByCommissionRateType",
+                "using": {
+                  "foreign_key_constraint_on": "commission_rate_type"
+                }
+              },
+              {
+                "name": "customer",
+                "using": {
+                  "foreign_key_constraint_on": "customer_id"
+                }
+              },
+              {
+                "name": "driver",
+                "using": {
+                  "foreign_key_constraint_on": "driver_id"
+                }
+              },
+              {
+                "name": "trip_status",
+                "using": {
+                  "foreign_key_constraint_on": "status"
+                }
+              }
+            ],
+            "array_relationships": [
+              {
+                "name": "bookings",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "trip_id",
+                    "table": {
+                      "name": "bookings",
+                      "schema": "public"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "commissions",
+                "using": {
+                  "foreign_key_constraint_on": {
+                    "column": "trip_id",
+                    "table": {
+                      "name": "commissions",
+                      "schema": "public"
+                    }
+                  }
+                }
+              }
+            ],
+            "insert_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "check": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "trip_id",
+                    "start_location",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                    "driver_id",
+                    "id",
+                    "customer_id"
+                  ]
+                },
+                "comment": ""
+              }
+            ],
+            "select_permissions": [
+              {
+                "role": "customer",
+                "permission": {
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "location_points",
+                    "start_location",
+                    "status",
+                    "trip_id",
+                    "created_at",
+                    "ended_at",
+                    "started_at",
+                    "updated_at",
+                    "customer_id",
+                    "driver_id",
+                    "id"
+                  ],
+                  "filter": {
+                    "customer_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "allow_aggregations": true
+                },
+                "comment": ""
+              },
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "location_points",
+                    "start_location",
+                    "status",
+                    "trip_id",
+                    "created_at",
+                    "ended_at",
+                    "started_at",
+                    "updated_at",
+                    "customer_id",
+                    "driver_id",
+                    "id"
+                  ],
+                  "filter": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  }
+                },
+                "comment": ""
+              }
+            ],
+            "update_permissions": [
+              {
+                "role": "driver",
+                "permission": {
+                  "columns": [
+                    "duration_sec",
+                    "free_waiting_minute",
+                    "waiting_time_sec",
+                    "commission_fee",
+                    "commission_rate",
+                    "distance_fee",
+                    "distance_fee_per_km",
+                    "distance_km",
+                    "driver_received_amount",
+                    "end_lat",
+                    "end_lng",
+                    "extra_fee",
+                    "initial_fee",
+                    "insurance_fee",
+                    "platform_fee",
+                    "start_lat",
+                    "start_lng",
+                    "total_amount",
+                    "waiting_fee",
+                    "waiting_fee_per_minute",
+                    "commission_rate_type",
+                    "end_location",
+                    "extra_list",
+                    "trip_id",
+                    "start_location",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                    "driver_id",
+                    "id",
+                    "customer_id"
+                  ],
+                  "filter": {
+                    "driver_id": {
+                      "_eq": "X-Hasura-User-Id"
+                    }
+                  },
+                  "check": null
+                },
+                "comment": ""
+              }
+            ]
+          },
+          {
+            "table": {
+              "name": "vehicle_types",
+              "schema": "public"
+            }
+          }
+        ],
+        "configuration": {
+          "connection_info": {
+            "database_url": {
+              "from_env": "PG_DATABASE_URL"
+            },
+            "isolation_level": "read-committed",
+            "use_prepared_statements": false
+          }
+        }
+      }
+    ],
+    "query_collections": [
+      {
+        "name": "allowed-queries",
+        "definition": {
+          "queries": []
+        }
+      }
+    ],
+    "allowlist": [
+      {
+        "collection": "allowed-queries",
+        "scope": {
+          "global": true
+        }
+      }
+    ],
+    "actions": [
+      {
+        "name": "AcceptBooking",
+        "definition": {
+          "handler": "http://backend:9001/trip/accept",
+          "output_type": "AcceptBookingResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "AcceptBooking",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "AdminDriverCashIn",
+        "definition": {
+          "handler": "http://backend:9001/transaction/admin-driver-cashin",
+          "output_type": "AdminDriverCashInResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "driver_id",
+              "type": "uuid!"
+            },
+            {
+              "name": "amount",
+              "type": "numeric!"
+            },
+            {
+              "name": "payment_method",
+              "type": "String!"
+            },
+            {
+              "name": "receipt_photo_url",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "AdminDriverCashIn"
+      },
+      {
+        "name": "AdminSignIn",
+        "definition": {
+          "handler": "http://backend:9001/admin/signin",
+          "output_type": "AdminSignInResponse",
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "AdminSignIn",
+        "permissions": [
+          {
+            "role": "public"
+          }
+        ]
+      },
+      {
+        "name": "AdminSignUp",
+        "definition": {
+          "handler": "http://backend:9001/admin/signup",
+          "output_type": "AdminSignUpResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "type": "String!"
+            },
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "AdminSignUp"
+      },
+      {
+        "name": "CustomerSignIn",
+        "definition": {
+          "handler": "http://backend:9001/customer/signin",
+          "output_type": "CustomerSignInResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            },
+            {
+              "name": "fcm_token",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "CustomerSignIn",
+        "permissions": [
+          {
+            "role": "customer"
+          },
+          {
+            "role": "driver"
+          },
+          {
+            "role": "public"
+          }
+        ]
+      },
+      {
+        "name": "CustomerSignUp",
+        "definition": {
+          "handler": "http://backend:9001/customer/signup",
+          "output_type": "CustomerSignUpResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "type": "String!"
+            },
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            },
+            {
+              "name": "profile_picture_url",
+              "type": "String"
+            },
+            {
+              "name": "fcm_token",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "CustomerSignUp",
+        "permissions": [
+          {
+            "role": "customer"
+          },
+          {
+            "role": "driver"
+          },
+          {
+            "role": "public"
+          }
+        ]
+      },
+      {
+        "name": "CustomerUpdatePassword",
+        "definition": {
+          "handler": "http://backend:9001/customer/update-password",
+          "output_type": "CustomerUpdatePasswordResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "oldPassword",
+              "type": "String!"
+            },
+            {
+              "name": "newPassword",
+              "type": "String!"
+            },
+            {
+              "name": "confirmNewPassword",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "CustomerUpdatePassword",
+        "permissions": [
+          {
+            "role": "customer"
+          }
+        ]
+      },
+      {
+        "name": "DriverCashIn",
+        "definition": {
+          "handler": "http://backend:9001/transaction/driver-cashin",
+          "output_type": "DriverCashInResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "payment_method",
+              "type": "String!"
+            },
+            {
+              "name": "receipt_photo_url",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "DriverCashIn",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "DriverSignIn",
+        "definition": {
+          "handler": "http://backend:9001/driver/signin",
+          "output_type": "DriverSignInResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            },
+            {
+              "name": "fcm_token",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "DriverSignIn",
+        "permissions": [
+          {
+            "role": "driver"
+          },
+          {
+            "role": "public"
+          }
+        ]
+      },
+      {
+        "name": "DriverSignUp",
+        "definition": {
+          "handler": "http://backend:9001/driver/signup",
+          "output_type": "DriverSignUpResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "type": "String!"
+            },
+            {
+              "name": "phone",
+              "type": "String!"
+            },
+            {
+              "name": "password",
+              "type": "String!"
+            },
+            {
+              "name": "address",
+              "type": "String"
+            },
+            {
+              "name": "nrc_number",
+              "type": "String"
+            },
+            {
+              "name": "birth_date",
+              "type": "String"
+            },
+            {
+              "name": "driving_license_number",
+              "type": "String"
+            },
+            {
+              "name": "vehicle_number",
+              "type": "String"
+            },
+            {
+              "name": "vehicle_model",
+              "type": "String"
+            },
+            {
+              "name": "profile_picture_url",
+              "type": "String"
+            },
+            {
+              "name": "fcm_token",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "DriverSignUp",
+        "permissions": [
+          {
+            "role": "customer"
+          },
+          {
+            "role": "driver"
+          },
+          {
+            "role": "public"
+          }
+        ]
+      },
+      {
+        "name": "DriverUpdatePassword",
+        "definition": {
+          "handler": "http://backend:9001/driver/update-password",
+          "output_type": "DriverUpdatePasswordResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "oldPassword",
+              "type": "String!"
+            },
+            {
+              "name": "newPassword",
+              "type": "String!"
+            },
+            {
+              "name": "confirmNewPassword",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "DriverUpdatePassword",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "EndBookedTrip",
+        "definition": {
+          "handler": "http://backend:9001/trip/end-booked-trip",
+          "output_type": "EndBookedTripResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "end_lat",
+              "type": "numeric"
+            },
+            {
+              "name": "end_lng",
+              "type": "numeric"
+            },
+            {
+              "name": "extra_list",
+              "type": "String!"
+            },
+            {
+              "name": "extra_fee",
+              "type": "numeric!"
+            },
+            {
+              "name": "duration",
+              "type": "Int!"
+            },
+            {
+              "name": "waiting_time",
+              "type": "Int!"
+            },
+            {
+              "name": "distance",
+              "type": "numeric!"
+            },
+            {
+              "name": "location_points",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "EndBookedTrip",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "EndTrip",
+        "definition": {
+          "handler": "http://backend:9001/trip/end",
+          "output_type": "EndTripResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "end_lat",
+              "type": "numeric"
+            },
+            {
+              "name": "end_lng",
+              "type": "numeric"
+            },
+            {
+              "name": "extra_list",
+              "type": "String!"
+            },
+            {
+              "name": "extra_fee",
+              "type": "numeric!"
+            },
+            {
+              "name": "duration",
+              "type": "Int!"
+            },
+            {
+              "name": "waiting_time",
+              "type": "Int!"
+            },
+            {
+              "name": "distance",
+              "type": "numeric!"
+            },
+            {
+              "name": "location_points",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "EndTrip",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "SearchDriver",
+        "definition": {
+          "handler": "http://backend:9001/trip/search-driver",
+          "output_type": "SearchDriverResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "SearchDriver",
+        "permissions": [
+          {
+            "role": "customer"
+          }
+        ]
+      },
+      {
+        "name": "StartBookedTrip",
+        "definition": {
+          "handler": "http://backend:9001/trip/start-booked-trip",
+          "output_type": "StartBookedTripResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "start_lat",
+              "type": "numeric"
+            },
+            {
+              "name": "start_lng",
+              "type": "numeric"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "StartBookedTrip",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "StartTrip",
+        "definition": {
+          "handler": "http://backend:9001/trip/start",
+          "output_type": "StartTripResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "start_lat",
+              "type": "numeric"
+            },
+            {
+              "name": "start_lng",
+              "type": "numeric"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "StartTrip",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "UpdateDriverCashIn",
+        "definition": {
+          "handler": "http://backend:9001/transaction/update-driver-cashin",
+          "output_type": "UpdateDriverCashInResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "driver_transaction_id",
+              "type": "uuid!"
+            },
+            {
+              "name": "amount",
+              "type": "numeric!"
+            },
+            {
+              "name": "accepted",
+              "type": "Boolean!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "UpdateDriverCashIn"
+      },
+      {
+        "name": "bookTrip",
+        "definition": {
+          "handler": "http://backend:9001/trip/book",
+          "output_type": "bookTripResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "start_lat",
+              "type": "numeric!"
+            },
+            {
+              "name": "start_lng",
+              "type": "numeric!"
+            },
+            {
+              "name": "end_lat",
+              "type": "numeric!"
+            },
+            {
+              "name": "end_lng",
+              "type": "numeric!"
+            },
+            {
+              "name": "start_location",
+              "type": "String"
+            },
+            {
+              "name": "end_location",
+              "type": "String"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "bookTrip",
+        "permissions": [
+          {
+            "role": "customer"
+          }
+        ]
+      },
+      {
+        "name": "cancelBooking",
+        "definition": {
+          "handler": "http://backend:9001/trip/cancel",
+          "output_type": "cancelBookingResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "cancelBooking",
+        "permissions": [
+          {
+            "role": "customer"
+          }
+        ]
+      },
+      {
+        "name": "getFileUploadUrl",
+        "definition": {
+          "handler": "http://backend:9001/getFileUploadUrl",
+          "output_type": "fileUploadInfo",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "arguments": [
+            {
+              "name": "content_type",
+              "type": "String!"
+            },
+            {
+              "name": "folder",
+              "type": "String!"
+            }
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "getFileUploadUrl",
+        "permissions": [
+          {
+            "role": "customer"
+          },
+          {
+            "role": "public"
+          },
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "pickupCustomer",
+        "definition": {
+          "handler": "http://backend:9001/trip/pickup",
+          "output_type": "pickupCustomerResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "pickupCustomer",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      },
+      {
+        "name": "rejectBooking",
+        "definition": {
+          "handler": "http://backend:9001/trip/reject",
+          "output_type": "rejectBookingResponse",
+          "forward_client_headers": true,
+          "ignored_client_headers": [
+            "Content-Length",
+            "Content-MD5",
+            "User-Agent",
+            "Host",
+            "Origin",
+            "Referer",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Accept-Datetime",
+            "Cache-Control",
+            "Connection",
+            "DNT",
+            "Content-Type"
+          ],
+          "type": "mutation",
+          "kind": "synchronous"
+        },
+        "comment": "rejectBooking",
+        "permissions": [
+          {
+            "role": "driver"
+          }
+        ]
+      }
+    ],
+    "custom_types": {
+      "objects": [
+        {
+          "name": "DriverSignUpResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "DriverSignInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "token",
+              "type": "String!"
+            },
+            {
+              "name": "disabled",
+              "type": "Boolean!"
+            }
+          ]
+        },
+        {
+          "name": "fileUploadInfo",
+          "fields": [
+            {
+              "name": "fileUploadUrl",
+              "type": "String!"
+            },
+            {
+              "name": "fileName",
+              "type": "String!"
+            },
+            {
+              "name": "content_type",
+              "type": "String!"
+            },
+            {
+              "name": "error",
+              "type": "String!"
+            },
+            {
+              "name": "message",
+              "type": "String!"
+            }
+          ]
+        },
+        {
+          "name": "CustomerSignInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "token",
+              "type": "String!"
+            }
+          ]
+        },
+        {
+          "name": "CustomerSignUpResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "token",
+              "type": "String!"
+            }
+          ]
+        },
+        {
+          "name": "StartTripResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "trip_id",
+              "type": "uuid"
+            }
+          ]
+        },
+        {
+          "name": "EndTripResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "trip_id",
+              "type": "uuid"
+            }
+          ]
+        },
+        {
+          "name": "DriverCashInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "transaction_id",
+              "type": "uuid!"
+            }
+          ]
+        },
+        {
+          "name": "UpdateDriverCashInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "transaction_id",
+              "type": "uuid"
+            }
+          ]
+        },
+        {
+          "name": "AdminDriverCashInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "transaction_id",
+              "type": "uuid!"
+            }
+          ]
+        },
+        {
+          "name": "CustomerUpdatePasswordResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "DriverUpdatePasswordResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "AdminSignInResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "token",
+              "type": "String!"
+            }
+          ]
+        },
+        {
+          "name": "AdminSignUpResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "token",
+              "type": "String!"
+            }
+          ]
+        },
+        {
+          "name": "bookTripResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "id",
+              "type": "uuid"
+            }
+          ]
+        },
+        {
+          "name": "SearchDriverResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "success",
+              "type": "Boolean"
+            }
+          ]
+        },
+        {
+          "name": "AcceptBookingResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "cancelBookingResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "rejectBookingResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "pickupCustomerResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "StartBookedTripResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "trip_id",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "EndBookedTripResponse",
+          "fields": [
+            {
+              "name": "message",
+              "type": "String"
+            },
+            {
+              "name": "trip_id",
+              "type": "String"
+            }
+          ]
+        }
+      ]
+    },
+    "backend_configs": {
+      "dataconnector": {
+        "athena": {
+          "uri": "http://localhost:8081/api/v1/athena"
+        },
+        "mariadb": {
+          "uri": "http://localhost:8081/api/v1/mariadb"
+        },
+        "mongodb": {
+          "uri": "http://localhost:8082"
+        },
+        "mysql8": {
+          "uri": "http://localhost:8081/api/v1/mysql"
+        },
+        "oracle": {
+          "uri": "http://localhost:8081/api/v1/oracle"
+        },
+        "redshift": {
+          "uri": "http://localhost:8081/api/v1/redshift"
+        },
+        "snowflake": {
+          "uri": "http://localhost:8081/api/v1/snowflake"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Driver</title>
+</head>
+<body>
+<h1>Driver</h1>
+<div>
+    <label for="driverId">Driver ID: </label>
+    <input type="text" id="driverId" placeholder="Enter driver ID"/>
+</div>
+<div>
+    <label for="customerId">Customer ID: </label>
+    <input type="text" id="customerId" placeholder="Enter customer ID"/>
+</div>
+<button onclick="startSendingLocation()">Start Sending Location</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io("http://13.212.113.174");
+
+    function getRandomLocation() {
+        const locations = [
+            {
+                name: "Yangon International School",
+                lat: 16.8550,
+                lng: 96.1220
+            },
+            {
+                name: "Myanmar Plaza",
+                lat: 16.8498,
+                lng: 96.1245
+            },
+            {
+                name: "Inya Lake Park",
+                lat: 16.8483,
+                lng: 96.1320
+            },
+            {
+                name: "Sedona Hotel Yangon",
+                lat: 16.8463,
+                lng: 96.1272
+            },
+            {
+                name: "Embassy of the United States",
+                lat: 16.8602,
+                lng: 96.1280
+            },
+            {
+                name: "Embassy of the Republic of Korea",
+                lat: 16.8630,
+                lng: 96.1263
+            }
+        ];
+
+        const randomIndex = Math.floor(Math.random() * locations.length);
+        return locations[randomIndex];
+    }
+
+    function getRandom() {
+        return (Math.random() * 10).toFixed(2);
+    }
+
+    function startSendingLocation() {
+        const driverId = document.getElementById('driverId').value;
+        const customerId = document.getElementById('customerId').value;
+
+        if (!driverId || !customerId) {
+            alert('Please enter both driver ID and customer ID');
+            return;
+        }
+
+        setInterval(() => {
+            socket.emit('driverLocation', {driverId, customerId, location: getRandomLocation()});
+        }, 2000); // Send location every 2 seconds
+
+        setInterval(() => {
+            socket.emit('driverTripInfo', {
+                driverId,
+                customerId,
+                tripFee: getRandom(),
+                totalTraveled: getRandom(),
+                waitingTime: getRandom(),
+                duration: getRandom()
+            });
+        }, 2000); // Send trip fee every 2 seconds
+
+
+        setInterval(() => {
+            socket.emit('tripStatus', {
+                driverId,
+                customerId,
+                tripStatus: 'driving'
+            });
+        }, 2000); // Send trip fee every 2 seconds
+    }
+</script>
+</body>
