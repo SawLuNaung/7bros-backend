@@ -2127,6 +2127,14 @@
             {
               "name": "location_points",
               "type": "String!"
+            },
+            {
+              "name": "gps_gaps",
+              "type": "Int"
+            },
+            {
+              "name": "gps_gap_details",
+              "type": "String"
             }
           ],
           "type": "mutation",
@@ -2601,6 +2609,42 @@
             {
               "name": "trip_id",
               "type": "uuid"
+            },
+            {
+              "name": "total_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "driver_received_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "commission_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "waiting_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "distance_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "extra_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "initial_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "platform_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "insurance_fee",
+              "type": "numeric"
             }
           ]
         },
@@ -2772,6 +2816,42 @@
             {
               "name": "trip_id",
               "type": "String"
+            },
+            {
+              "name": "total_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "driver_received_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "commission_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "waiting_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "distance_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "extra_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "initial_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "platform_fee",
+              "type": "numeric"
+            },
+            {
+              "name": "insurance_fee",
+              "type": "numeric"
             }
           ]
         }

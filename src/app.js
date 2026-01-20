@@ -81,7 +81,7 @@ app.use("/admin", adminRouter);
 
 app.use("/getFileUploadUrl", fileUploadRouter);
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8001
 
 
 server.listen(PORT, () => {

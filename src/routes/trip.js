@@ -231,10 +231,40 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 notification_type: "trip",
                 detail_id: activeBooking.trip_id
             })
-            return res.status(201).json({
+            console.log("EndBookedTrip calculated fees:", {
+                waiting_fee,
+                distanceFee,
+                driver_total,
+                customer_total,
+                commission_fee,
+                driver_received_amount
+            });
+            
+            // Prepare response object
+            const responseData = {
                 message: "trip ended",
-                trip_id: updatedTrip[0].id
-            })
+                trip_id: updatedTrip[0].id,
+                total_amount: Number(customer_total),
+                driver_received_amount: Number(driver_received_amount),
+                commission_fee: Number(commission_fee),
+                waiting_fee: Number(waiting_fee),
+                distance_fee: Number(distanceFee),
+                extra_fee: Number(parsed.extra_fee),
+                initial_fee: Number(feeConfigs.initial_fee),
+                platform_fee: Number(feeConfigs.platform_fee),
+                insurance_fee: Number(feeConfigs.insurance_fee)
+            };
+            
+            console.log("=== SENDING RESPONSE TO HASURA (EndBookedTrip) ===");
+            console.log("Response JSON:", JSON.stringify(responseData, null, 2));
+            console.log("Response values check:", {
+                total_amount: responseData.total_amount,
+                isNull: responseData.total_amount === null,
+                isUndefined: responseData.total_amount === undefined,
+                type: typeof responseData.total_amount
+            });
+            
+            return res.status(201).json(responseData)
         } else {
             return res.status(400).json({message: "You have no active booking"})
         }
@@ -493,10 +523,32 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             })
 
             console.log("Trip ended successfully:", updatedTrip[0].id);
-            return res.status(201).json({
+            
+            // Prepare response object
+            const responseData = {
                 message: "trip ended",
-                trip_id: updatedTrip[0].id
-            })
+                trip_id: updatedTrip[0].id,
+                total_amount: Number(customer_total),
+                driver_received_amount: Number(driver_received_amount),
+                commission_fee: Number(commission_fee),
+                waiting_fee: Number(waiting_fee),
+                distance_fee: Number(distanceFee),
+                extra_fee: Number(parsed.extra_fee),
+                initial_fee: Number(feeConfigs.initial_fee),
+                platform_fee: Number(feeConfigs.platform_fee),
+                insurance_fee: Number(feeConfigs.insurance_fee)
+            };
+            
+            console.log("=== SENDING RESPONSE TO HASURA ===");
+            console.log("Response JSON:", JSON.stringify(responseData, null, 2));
+            console.log("Response values check:", {
+                total_amount: responseData.total_amount,
+                isNull: responseData.total_amount === null,
+                isUndefined: responseData.total_amount === undefined,
+                type: typeof responseData.total_amount
+            });
+            
+            return res.status(201).json(responseData)
         } else {
             console.log("No active trip found with status in ['pending', 'driving', 'waiting']");
             return res.status(400).json({message: "You have no active trip"})
