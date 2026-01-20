@@ -220,9 +220,17 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 bookingId: activeBooking.id,
                 status: "completed"
             });
-            //add transaction data
-            await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
-            await sendNoti("Ride Finished", `Your ride is finished. Thanks for riding with Go Tuk Tuk`, 'default', customer.fcm_token)
+            //add transaction data (wrap in try-catch to prevent breaking response)
+            try {
+                await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+            } catch (notiError) {
+                console.log("Failed to send driver notification (non-critical):", notiError.message);
+            }
+            try {
+                await sendNoti("Ride Finished", `Your ride is finished. Thanks for riding with Go Tuk Tuk`, 'default', customer.fcm_token)
+            } catch (notiError) {
+                console.log("Failed to send customer notification (non-critical):", notiError.message);
+            }
 
             await knex('driver_notifications').insert({
                 driver_id: user_id,
@@ -506,21 +514,31 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 balance: Number(driver.balance) - commission_fee,
             }).where("id", user_id).returning('*')
 
-            // Send notification only if FCM token exists
+            // Send notification only if FCM token exists (wrap in try-catch to prevent breaking response)
             if (updatedDriver[0] && updatedDriver[0].fcm_token && updatedDriver[0].fcm_token.length > 5) {
-                await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+                try {
+                    await sendNoti("Trip Ended", `Your trip is complete. You earned ${driver_received_amount} ks`, 'default', updatedDriver[0].fcm_token)
+                } catch (notiError) {
+                    console.log("Failed to send notification (non-critical):", notiError.message);
+                    // Don't throw - notification failure shouldn't break the response
+                }
             } else {
                 console.log("No valid FCM token found for driver, skipping notification");
             }
 
-            // Add driver notification to database
-            await knex('driver_notifications').insert({
-                driver_id: user_id,
-                title: "Trip Ended",
-                body: `Your trip is complete. You earned ${driver_received_amount} ks`,
-                notification_type: "trip",
-                detail_id: activeTrip.id
-            })
+            // Add driver notification to database (wrap in try-catch to prevent breaking response)
+            try {
+                await knex('driver_notifications').insert({
+                    driver_id: user_id,
+                    title: "Trip Ended",
+                    body: `Your trip is complete. You earned ${driver_received_amount} ks`,
+                    notification_type: "trip",
+                    detail_id: activeTrip.id
+                })
+            } catch (notiDbError) {
+                console.log("Failed to insert driver notification (non-critical):", notiDbError.message);
+                // Don't throw - notification DB insert failure shouldn't break the response
+            }
 
             console.log("Trip ended successfully:", updatedTrip[0].id);
             
