@@ -166,6 +166,13 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
             const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
 
+            // Ensure started_at is preserved if it exists, otherwise set it from created_at
+            const endTime = new Date();
+            const existingTrip = await knex('trips').where('id', activeBooking.trip_id).first();
+            const startedAtValue = existingTrip?.started_at || existingTrip?.created_at;
+            console.log("Ending booked trip - started_at before update:", existingTrip?.started_at);
+            console.log("Ending booked trip - setting ended_at to:", endTime);
+            
             const updatedTrip = await knex('trips').update({
                 end_lat,
                 end_lng,
@@ -192,8 +199,12 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 location_points,
                 gps_gaps,
                 gps_gap_details,
-                ended_at: new Date()
-            }).where('id', activeBooking.trip_id).returning('id')
+                started_at: startedAtValue, // Preserve or set started_at
+                ended_at: endTime
+            }).where('id', activeBooking.trip_id).returning('*')
+            
+            console.log("Booked trip updated - started_at after update:", updatedTrip[0].started_at);
+            console.log("Booked trip updated - ended_at after update:", updatedTrip[0].ended_at);
             await knex('bookings').update({
                 status: "completed",
             }).where("id", activeBooking.id)
@@ -466,6 +477,12 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             });
 
             // Update trip with completed data
+            // Ensure started_at is preserved if it exists, otherwise set it from created_at
+            const endTime = new Date();
+            const startedAtValue = activeTrip.started_at || activeTrip.created_at;
+            console.log("Ending trip - started_at before update:", activeTrip.started_at);
+            console.log("Ending trip - setting ended_at to:", endTime);
+            
             const updatedTrip = await knex('trips').update({
                 end_lat,
                 end_lng,
@@ -492,8 +509,12 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 location_points,
                 gps_gaps,
                 gps_gap_details,
-                ended_at: new Date()
-            }).where('id', activeTrip.id).returning('id')
+                started_at: startedAtValue, // Preserve or set started_at
+                ended_at: endTime
+            }).where('id', activeTrip.id).returning('*')
+            
+            console.log("Trip updated - started_at after update:", updatedTrip[0].started_at);
+            console.log("Trip updated - ended_at after update:", updatedTrip[0].ended_at);
 
             // Add transaction data for commission
             const trax = await knex('driver_transactions').insert({
