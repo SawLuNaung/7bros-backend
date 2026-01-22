@@ -51,6 +51,7 @@ router.post("/start", authenticateDriverToken, async (req, res) => {
         console.log("Fee configs loaded:", feeConfigs);
         
         const geoData = await reverseGeocode(start_lat, start_lng);
+        
         const createdTrip = await knex('trips').insert({
             driver_id: user_id,
             status: "driving",
@@ -58,6 +59,7 @@ router.post("/start", authenticateDriverToken, async (req, res) => {
             start_lng,
             start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
             trip_id: generateTripId(),
+            started_at: new Date(),
             // Set initial fee values
             initial_fee: feeConfigs.initial_fee,
             commission_rate: feeConfigs.commission_rate,
@@ -70,6 +72,7 @@ router.post("/start", authenticateDriverToken, async (req, res) => {
         }).returning('*')
         
         console.log("Trip created with ID:", createdTrip[0].id, "Status: driving");
+        console.log("Returned started_at from DB:", createdTrip[0].started_at);
         
         await knex('drivers').update({
             status: "on trip"
@@ -100,8 +103,9 @@ router.post("/start-booked-trip", authenticateDriverToken, async (req, res) => {
                 start_lat,
                 start_lng,
                 start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
-                trip_id: generateTripId()
-            }).returning('id')
+                trip_id: generateTripId(),
+                started_at: new Date()
+            }).returning('*')
             await knex('bookings').update({
                 trip_id: createdTrip[0].id
             }).where("id", activeBooking.id)
