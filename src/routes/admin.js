@@ -53,8 +53,13 @@ router.post("/signin",  async (req, res) => {
             return res.status(400).json({message: "missing required fields"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in admin endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -82,8 +87,13 @@ router.post("/signup", async (req, res) => {
             return res.status(400).json({message: "missing required fields"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in admin endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -112,8 +122,13 @@ router.post("/update-password", authenticateAdminToken, async (req, res) => {
             return res.status(400).json({message: "missing required fields"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in admin endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -135,8 +150,13 @@ router.post("/update-user-password", authenticateSuperAdminToken, async (req, re
             return res.status(400).json({message: "missing required fields"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in admin endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 

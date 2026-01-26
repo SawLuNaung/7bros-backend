@@ -44,11 +44,19 @@ function generateDriverId(driverId) {
 
 const fetchGraphqlApi = async (query, variables) => {
     try {
+        // Hasura admin secret - moved to environment variable for security
+        const hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET;
+        
+        if (!hasuraAdminSecret) {
+            console.error("ERROR: HASURA_ADMIN_SECRET environment variable is not set!");
+            throw new Error("Hasura admin secret not configured");
+        }
+        
         const response = await fetch(graphqlApi, {
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
-                "x-hasura-admin-secret": "joypuppy"
+                "x-hasura-admin-secret": hasuraAdminSecret
             },
             body: JSON.stringify({
                 query,

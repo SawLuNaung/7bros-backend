@@ -74,8 +74,13 @@ router.post("/driver-cashin", authenticateDriverToken, async (req, res) => {
             transaction_id: createdTrax[0].id
         })
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in transaction endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -157,8 +162,13 @@ router.post("/update-driver-cashin", authenticateAdminToken, async (req, res) =>
             })
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in transaction endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -245,8 +255,13 @@ router.post("/admin-driver-cashin", authenticateAdminToken, async (req, res) => 
             })
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in transaction endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 

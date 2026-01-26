@@ -83,8 +83,13 @@ router.post("/start", authenticateDriverToken, async (req, res) => {
             trip_id: createdTrip[0].id
         })
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in /start endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -121,8 +126,13 @@ router.post("/start-booked-trip", authenticateDriverToken, async (req, res) => {
         }
 
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e)
+        console.error("Error in /start endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -292,8 +302,13 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             return res.status(400).json({message: "You have no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in trip endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -597,8 +612,13 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             return res.status(400).json({message: "You have no active trip"})
         }
     } catch (e) {
-        console.log("Error in end trip:", e)
-        return res.status(500).json(e.toString())
+        console.error("Error in end trip:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -635,8 +655,13 @@ router.post("/book", authenticateUserToken, async (req, res) => {
             return res.status(400).json({message: "missing required fields"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in /book endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -680,8 +705,13 @@ router.post("/search-driver", authenticateUserToken, async (req, res) => {
             return res.status(400).json({message: "You have no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in trip endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -711,8 +741,13 @@ router.post("/accept", authenticateDriverToken, async (req, res) => {
             return res.status(400).json({message: "no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in /accept endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -744,8 +779,13 @@ router.post("/pickup", authenticateDriverToken, async (req, res) => {
             return res.status(400).json({message: "no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in trip endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -777,8 +817,13 @@ router.post("/reject", authenticateDriverToken, async (req, res) => {
             return res.status(400).json({message: "no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in trip endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -815,8 +860,13 @@ router.post("/cancel", authenticateUserToken, async (req, res) => {
             return res.status(400).json({message: "no active booking"})
         }
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in /cancel endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
@@ -826,8 +876,13 @@ router.post("/test", async (req, res) => {
         await sendNoti("ခရီးသည် App အော်ဒါ", "ခရီးသည် App မှ အော်ဒါ သစ်ရရှိပါသည်", "transaction", "e2RzbkmHSCa5PnLvlAe6oz:APA91bETABuEfVhpZJkDhHmGKtUCyi6v1uc_fvVCNkx_rXzR2VT2S7t40zlFUGzE-MyJbmenBpl_Ic2BrDNpw7JzO2s8otpghMO3BPHv11GcLMAuiD0KLX4")
         return res.json("efef")
     } catch (e) {
-        console.log(e)
-        return res.status(500).json(e.toString())
+        console.error("Error in /test endpoint:", e);
+        return res.status(500).json({
+            message: "Internal server error",
+            extensions: {
+                code: "INTERNAL_ERROR"
+            }
+        });
     }
 })
 
