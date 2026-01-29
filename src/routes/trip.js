@@ -139,11 +139,15 @@ router.post("/start", authenticateDriverToken, async (req, res) => {
             
             console.log("Trip created with ID:", createdTrip[0].id, "Status: driving");
             console.log("Returned started_at from DB:", createdTrip[0].started_at);
-        
-        return res.status(201).json({
-            message: "trip started",
-            trip_id: createdTrip[0].id
-        })
+            
+            return res.status(201).json({
+                message: "trip started",
+                trip_id: createdTrip[0].id
+            })
+        } catch (transactionError) {
+            await trx.rollback();
+            throw transactionError;
+        }
     } catch (e) {
         console.error("Error in /start endpoint:", e);
         return res.status(500).json({
@@ -160,25 +164,76 @@ router.post("/start-booked-trip", authenticateDriverToken, async (req, res) => {
     try {
         const user_id = req.user_id
         const {start_lat, start_lng} = req.body.input
-        const geoData = await reverseGeocode(start_lat, start_lng);
+        
+        // Validate coordinates
+        const coordValidation = validateCoordinates(start_lat, start_lng);
+        if (!coordValidation.valid) {
+            return res.status(400).json({
+                message: coordValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        const geoData = await reverseGeocode(coordValidation.lat, coordValidation.lng);
+        
+        // Validate geocoding result
+        if (geoData.status !== "OK" || !geoData.results || geoData.results.length === 0) {
+            console.warn("Geocoding failed or returned no results:", geoData.status);
+            // Continue with null location - don't fail the trip start
+        }
 
         const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "on trip").first()
-        if (activeBooking) {
-            const createdTrip = await knex('trips').insert({
+        
+        if (!activeBooking) {
+            return res.status(400).json({
+                message: "You have no active booking",
+                extensions: {
+                    code: "NO_ACTIVE_BOOKING"
+                }
+            })
+        }
+        
+        // Use transaction to ensure atomicity and prevent race conditions
+        const trx = await knex.transaction();
+        try {
+            // Double-check booking still exists and is active
+            const checkBooking = await trx('bookings')
+                .where('id', activeBooking.id)
+                .where('status', "on trip")
+                .first();
+                
+            if (!checkBooking) {
+                await trx.rollback();
+                return res.status(400).json({
+                    message: "Booking no longer active",
+                    extensions: {
+                        code: "BOOKING_INACTIVE"
+                    }
+                })
+            }
+            
+            const createdTrip = await trx('trips').insert({
                 driver_id: user_id,
                 status: "driving",
                 start_lat: coordValidation.lat,
                 start_lng: coordValidation.lng,
-                start_location: geoData.results[0] ? geoData.results[0].formatted_address : null,
+                start_location: (geoData.status === "OK" && geoData.results && geoData.results[0]) ? geoData.results[0].formatted_address : null,
                 trip_id: generateTripId(),
                 started_at: new Date()
             }).returning('*')
-            await knex('bookings').update({
+            
+            await trx('bookings').update({
                 trip_id: createdTrip[0].id
             }).where("id", activeBooking.id)
-            await knex('drivers').update({
+            
+            await trx('drivers').update({
                 status: "on trip"
             }).where("id", user_id)
+            
+            await trx.commit();
+            
             return res.status(201).json({
                 message: "trip started",
                 trip_id: createdTrip[0].id
@@ -187,9 +242,8 @@ router.post("/start-booked-trip", authenticateDriverToken, async (req, res) => {
             await trx.rollback();
             throw transactionError;
         }
-
     } catch (e) {
-        console.error("Error in /start endpoint:", e);
+        console.error("Error in /start-booked-trip endpoint:", e);
         return res.status(500).json({
             message: "Internal server error",
             extensions: {
@@ -377,40 +431,45 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 } catch (dbError) {
                     console.log("Failed to insert notification (non-critical):", dbError.message);
                 }
-            console.log("EndBookedTrip calculated fees:", {
-                waiting_fee,
-                distanceFee,
-                driver_total,
-                customer_total,
-                commission_fee,
-                driver_received_amount
-            });
-            
-            // Prepare response object
-            const responseData = {
-                message: "trip ended",
-                trip_id: updatedTrip[0].id,
-                total_amount: Number(customer_total),
-                driver_received_amount: Number(driver_received_amount),
-                commission_fee: Number(commission_fee),
-                waiting_fee: Number(waiting_fee),
-                distance_fee: Number(distanceFee),
-                extra_fee: Number(parsed.extra_fee),
-                initial_fee: Number(feeConfigs.initial_fee),
-                platform_fee: Number(feeConfigs.platform_fee),
-                insurance_fee: Number(feeConfigs.insurance_fee)
-            };
-            
-            console.log("=== SENDING RESPONSE TO HASURA (EndBookedTrip) ===");
-            console.log("Response JSON:", JSON.stringify(responseData, null, 2));
-            console.log("Response values check:", {
-                total_amount: responseData.total_amount,
-                isNull: responseData.total_amount === null,
-                isUndefined: responseData.total_amount === undefined,
-                type: typeof responseData.total_amount
-            });
-            
-            return res.status(201).json(responseData)
+                
+                console.log("EndBookedTrip calculated fees:", {
+                    waiting_fee,
+                    distanceFee,
+                    driver_total,
+                    customer_total,
+                    commission_fee,
+                    driver_received_amount
+                });
+                
+                // Prepare response object
+                const responseData = {
+                    message: "trip ended",
+                    trip_id: updatedTrip[0].id,
+                    total_amount: Number(customer_total),
+                    driver_received_amount: Number(driver_received_amount),
+                    commission_fee: Number(commission_fee),
+                    waiting_fee: Number(waiting_fee),
+                    distance_fee: Number(distanceFee),
+                    extra_fee: Number(parsed.extra_fee),
+                    initial_fee: Number(feeConfigs.initial_fee),
+                    platform_fee: Number(feeConfigs.platform_fee),
+                    insurance_fee: Number(feeConfigs.insurance_fee)
+                };
+                
+                console.log("=== SENDING RESPONSE TO HASURA (EndBookedTrip) ===");
+                console.log("Response JSON:", JSON.stringify(responseData, null, 2));
+                console.log("Response values check:", {
+                    total_amount: responseData.total_amount,
+                    isNull: responseData.total_amount === null,
+                    isUndefined: responseData.total_amount === undefined,
+                    type: typeof responseData.total_amount
+                });
+                
+                return res.status(201).json(responseData)
+            } catch (transactionError) {
+                await trx.rollback();
+                throw transactionError;
+            }
         } else {
             return res.status(400).json({message: "You have no active booking"})
         }
