@@ -7,6 +7,7 @@ const {
     calculateCommissionFee,
     calculateDriverReceivedAmount, generateTransactionNumber
 } = require("../utils/helper");
+const { validateAmount } = require("../utils/validators");
 var router = express.Router();
 var fireBaseAdmin = require("firebase-admin");
 
@@ -90,72 +91,99 @@ router.post("/update-driver-cashin", authenticateAdminToken, async (req, res) =>
         const messaging = fireBaseAdmin.messaging();
         const { driver_transaction_id, amount, accepted } = req.body.input
         if (driver_transaction_id && amount) {
-            const updatedTrax = await knex('driver_transactions').update({
-                amount,
-                status: accepted ? "completed" : "failed",
-            }).where("id", driver_transaction_id).where('status', 'pending').returning('driver_id')
-
-            if (!updatedTrax || updatedTrax.length === 0) {
-                return res.status(400).json({
-                    message: "invalid transaction id or already processed",
-                })
-            }
-
-            await knex('top_ups').update({
-                approved_admin_id: user_id,
-            }).where('driver_transaction_id', driver_transaction_id)
-
-
-            const driver = await knex('drivers').where('id', updatedTrax[0].driver_id).first()
-
-            accepted && await knex('drivers').update({
-                balance: Number(driver.balance) + Number(amount),
-            }).where("id", driver.id)
-
-            // Wrap FCM notification in try-catch (non-critical)
+            const amountValue = amount !== null && amount !== undefined ? Number(amount) : null;
+            
+            // Use transaction to ensure atomicity
+            const trx = await knex.transaction();
             try {
-                await messaging.send({
-                    notification: {
+                const updatedTrax = await trx('driver_transactions')
+                    .update({
+                        amount: amountValue,
+                        status: accepted ? "completed" : "failed",
+                    })
+                    .where("id", driver_transaction_id)
+                    .where('status', 'pending')
+                    .returning('driver_id')
+
+                if (!updatedTrax || updatedTrax.length === 0) {
+                    await trx.rollback();
+                    return res.status(400).json({
+                        message: "invalid transaction id or already processed",
+                    })
+                }
+
+                await trx('top_ups').update({
+                    approved_admin_id: user_id,
+                }).where('driver_transaction_id', driver_transaction_id)
+
+                const driver = await trx('drivers').where('id', updatedTrax[0].driver_id).first()
+                
+                if (!driver) {
+                    await trx.rollback();
+                    return res.status(404).json({
+                        message: "Driver not found",
+                        extensions: {
+                            code: "NOT_FOUND"
+                        }
+                    });
+                }
+
+                if (accepted && amountValue !== null) {
+                    await trx('drivers').update({
+                        balance: Number(driver.balance) + Number(amountValue),
+                    }).where("id", driver.id)
+                }
+                
+                await trx.commit();
+                
+                // Notifications outside transaction (non-critical)
+                try {
+                    await messaging.send({
+                        notification: {
+                            title: `Top Up ${accepted ? "Confirmed" : "Rejected"}`,
+                            body: accepted ? `amount ${amount} was added to your balance` : "Your top up request was failed",
+                        },
+                        android: {
+                            notification: {
+                                channelId: "transaction",
+                            }
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    sound: 'transaction.wav'
+                                }
+                            }
+                        },
+                        data: {
+                            detailId: driver_transaction_id,
+                        },
+                        token: driver.fcm_token
+                    })
+                } catch (notiError) {
+                    console.log("Failed to send FCM notification (non-critical):", notiError.message);
+                }
+
+                try {
+                    await knex('driver_notifications').insert({
+                        driver_id: driver.id,
                         title: `Top Up ${accepted ? "Confirmed" : "Rejected"}`,
                         body: accepted ? `amount ${amount} was added to your balance` : "Your top up request was failed",
-                    },
-                    android: {
-                        notification: {
-                            channelId: "transaction",
-                        }
-                    },
-                    apns: {
-                        payload: {
-                            aps: {
-                                sound: 'transaction.wav'
-                            }
-                        }
-                    },
-                    data: {
-                        detailId: driver_transaction_id,
-                    },
-                    token: driver.fcm_token
+                        notification_type: "transaction",
+                        detail_id: driver_transaction_id,
+                    })
+                } catch (dbError) {
+                    console.log("Failed to insert notification (non-critical):", dbError.message);
+                }
+                
+                return res.status(201).json({
+                    message: "update driver cash in success",
+                    transaction_id: driver_transaction_id
                 })
-            } catch (notiError) {
-                console.log("Failed to send FCM notification (non-critical):", notiError.message);
+            } catch (transactionError) {
+                await trx.rollback();
+                throw transactionError;
             }
-
-            // Wrap database notification insert in try-catch
-            try {
-                await knex('driver_notifications').insert({
-                    driver_id: driver.id,
-                    title: `Top Up ${accepted ? "Confirmed" : "Rejected"}`,
-                    body: accepted ? `amount ${amount} was added to your balance` : "Your top up request was failed",
-                    notification_type: "transaction",
-                    detail_id: driver_transaction_id,
-                })
-            } catch (dbError) {
-                console.log("Failed to insert notification (non-critical):", dbError.message);
-            }
-            return res.status(201).json({
-                message: "update driver cash in success",
-                transaction_id: driver_transaction_id
-            })
         } else {
             return res.status(400).json({
                 message: "missing required fields",
@@ -181,7 +209,7 @@ router.post("/admin-driver-cashin", authenticateAdminToken, async (req, res) => 
         if (driver_id && amount && payment_method) {
             const createdTrax = await knex('driver_transactions').insert({
                 driver_id,
-                amount,
+                amount: amountValidation.value,
                 transaction_type: "cash in",
                 status: "completed",
                 transaction_number: generateTransactionNumber()
@@ -202,7 +230,7 @@ router.post("/admin-driver-cashin", authenticateAdminToken, async (req, res) => 
             }
 
             await knex('drivers').update({
-                balance: Number(driver.balance) + Number(amount),
+                balance: Number(driver.balance) + Number(amountValidation.value),
             }).where("id", driver.id)
 
             // Wrap FCM notification in try-catch (non-critical)
@@ -210,7 +238,7 @@ router.post("/admin-driver-cashin", authenticateAdminToken, async (req, res) => 
                 await messaging.send({
                     notification: {
                         title: `Top Up Success`,
-                        body: `amount ${amount} was added to your balance`,
+                        body: `amount ${amountValidation.value} was added to your balance`,
                     },
                     android: {
                         notification: {

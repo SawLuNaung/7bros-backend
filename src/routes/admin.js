@@ -4,16 +4,43 @@ const {compare} = require("bcryptjs");
 const bcrypt = require("bcryptjs");
 const {createHasuraJWT} = require("../utils/helper");
 const {authenticateUserToken, authenticateAdminToken, authenticateSuperAdminToken} = require("../utils/userMiddleware");
+const rateLimit = require('express-rate-limit');
 var router = express.Router();
 const {databaseConnectionString} = require("../utils/config");
 
-router.post("/signin",  async (req, res) => {
+// Rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: {
+        message: "Too many authentication attempts, please try again later",
+        extensions: {
+            code: "RATE_LIMIT_EXCEEDED"
+        }
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+router.post("/signin", authLimiter, async (req, res) => {
     console.log("databaseConnectionString", databaseConnectionString);
     
     try {
         const {phone, password} = req.body.input;
-        if (phone && password) {
-            const existingUser = await knex('admins').where('phone', phone)
+        
+        // Validate phone number
+        const phoneValidation = validatePhoneNumber(phone);
+        if (!phoneValidation.valid) {
+            return res.status(400).json({
+                message: phoneValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        if (phoneValidation.value && password) {
+            const existingUser = await knex('admins').where('phone', phoneValidation.value)
             if (existingUser.length === 0) {
                 return res.status(400).json({message: "account doesn't exists"})
             } else {
@@ -29,7 +56,7 @@ router.post("/signin",  async (req, res) => {
                     const adminRole = existingUser[0].role || 'staff';
                     
                     console.log('=== SIGNIN DEBUG ===');
-                    console.log('Phone:', phone);
+                    console.log('Phone:', phoneValidation.value);
                     console.log('Database role:', existingUser[0].role);
                     console.log('Admin role:', adminRole);
                     
@@ -63,18 +90,30 @@ router.post("/signin",  async (req, res) => {
     }
 })
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", authLimiter, async (req, res) => {
     try {
         const {name, phone, password} = req.body.input;
-        if (name && phone && password) {
-            const existingUser = await knex('admins').where('phone', phone)
+        
+        // Validate phone number
+        const phoneValidation = validatePhoneNumber(phone);
+        if (!phoneValidation.valid) {
+            return res.status(400).json({
+                message: phoneValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        if (name && phoneValidation.value && password) {
+            const existingUser = await knex('admins').where('phone', phoneValidation.value)
             if (existingUser.length !== 0) {
                 return res.status(401).json({message: "account already exists"})
             } else {
                 const hashedPassword = await bcrypt.hash(password, 10)
                 const createdUser = await knex('admins').insert({
                     name,
-                    phone,
+                    phone: phoneValidation.value,
                     password: hashedPassword,
                     role: 'staff', // New admins default to 'staff' role (limited access)
                 }).returning('id')
