@@ -4,6 +4,7 @@ const {compare} = require("bcryptjs");
 const bcrypt = require("bcryptjs");
 const {createHasuraJWT} = require("../utils/helper");
 const {authenticateUserToken, authenticateAdminToken, authenticateSuperAdminToken} = require("../utils/userMiddleware");
+const {validatePhoneNumber} = require("../utils/validators");
 const rateLimit = require('express-rate-limit');
 var router = express.Router();
 const {databaseConnectionString} = require("../utils/config");
