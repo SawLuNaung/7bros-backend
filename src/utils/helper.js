@@ -71,28 +71,8 @@ const fetchGraphqlApi = async (query, variables) => {
 
 
 const reverseGeocode = async (latitude, longitude) => {
-    try {
-        const res = await axios(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${config.GMapApiKey}`);
-        
-        // Validate API response status
-        if (res.data.status !== "OK") {
-            console.error("Google Maps Geocoding API error:", res.data.status, res.data.error_message);
-            return {
-                status: res.data.status,
-                results: [],
-                error_message: res.data.error_message || "Geocoding failed"
-            };
-        }
-        
-        return res.data;
-    } catch (error) {
-        console.error("Reverse geocode API call failed:", error.message);
-        return {
-            status: "ERROR",
-            results: [],
-            error_message: error.message
-        };
-    }
+    const res = await axios(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${config.GMapApiKey}`);
+    return res.data
 };
 
 function generateTripId() {

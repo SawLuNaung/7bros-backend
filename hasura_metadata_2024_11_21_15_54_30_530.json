@@ -1472,7 +1472,7 @@
       {
         "name": "AcceptBooking",
         "definition": {
-          "handler": "http://backend:9001/trip/accept",
+          "handler": "http://backend:8001/trip/accept",
           "output_type": "AcceptBookingResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1504,7 +1504,7 @@
       {
         "name": "AdminDriverCashIn",
         "definition": {
-          "handler": "http://backend:9001/transaction/admin-driver-cashin",
+          "handler": "http://backend:8001/transaction/admin-driver-cashin",
           "output_type": "AdminDriverCashInResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1549,7 +1549,7 @@
       {
         "name": "AdminSignIn",
         "definition": {
-          "handler": "http://backend:9001/admin/signin",
+          "handler": "http://backend:8001/admin/signin",
           "output_type": "AdminSignInResponse",
           "ignored_client_headers": [
             "Content-Length",
@@ -1590,7 +1590,7 @@
       {
         "name": "AdminSignUp",
         "definition": {
-          "handler": "http://backend:9001/admin/signup",
+          "handler": "http://backend:8001/admin/signup",
           "output_type": "AdminSignUpResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1631,7 +1631,7 @@
       {
         "name": "CustomerSignIn",
         "definition": {
-          "handler": "http://backend:9001/customer/signin",
+          "handler": "http://backend:8001/customer/signin",
           "output_type": "CustomerSignInResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1683,7 +1683,7 @@
       {
         "name": "CustomerSignUp",
         "definition": {
-          "handler": "http://backend:9001/customer/signup",
+          "handler": "http://backend:8001/customer/signup",
           "output_type": "CustomerSignUpResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1743,7 +1743,7 @@
       {
         "name": "CustomerUpdatePassword",
         "definition": {
-          "handler": "http://backend:9001/customer/update-password",
+          "handler": "http://backend:8001/customer/update-password",
           "output_type": "CustomerUpdatePasswordResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1789,7 +1789,7 @@
       {
         "name": "DriverCashIn",
         "definition": {
-          "handler": "http://backend:9001/transaction/driver-cashin",
+          "handler": "http://backend:8001/transaction/driver-cashin",
           "output_type": "DriverCashInResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1831,7 +1831,7 @@
       {
         "name": "DriverSignIn",
         "definition": {
-          "handler": "http://backend:9001/driver/signin",
+          "handler": "http://backend:8001/driver/signin",
           "output_type": "DriverSignInResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1880,7 +1880,7 @@
       {
         "name": "DriverSignUp",
         "definition": {
-          "handler": "http://backend:9001/driver/signup",
+          "handler": "http://backend:8001/driver/signup",
           "output_type": "DriverSignUpResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -1964,7 +1964,7 @@
       {
         "name": "DriverUpdatePassword",
         "definition": {
-          "handler": "http://backend:9001/driver/update-password",
+          "handler": "http://backend:8001/driver/update-password",
           "output_type": "DriverUpdatePasswordResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2010,7 +2010,7 @@
       {
         "name": "EndBookedTrip",
         "definition": {
-          "handler": "http://backend:9001/trip/end-booked-trip",
+          "handler": "http://backend:8001/trip/end-booked-trip",
           "output_type": "EndBookedTripResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2076,7 +2076,7 @@
       {
         "name": "EndTrip",
         "definition": {
-          "handler": "http://backend:9001/trip/end",
+          "handler": "http://backend:8001/trip/end",
           "output_type": "EndTripResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2150,7 +2150,7 @@
       {
         "name": "SearchDriver",
         "definition": {
-          "handler": "http://backend:9001/trip/search-driver",
+          "handler": "http://backend:8001/trip/search-driver",
           "output_type": "SearchDriverResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2182,7 +2182,7 @@
       {
         "name": "StartBookedTrip",
         "definition": {
-          "handler": "http://backend:9001/trip/start-booked-trip",
+          "handler": "http://backend:8001/trip/start-booked-trip",
           "output_type": "StartBookedTripResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2224,7 +2224,7 @@
       {
         "name": "StartTrip",
         "definition": {
-          "handler": "http://backend:9001/trip/start",
+          "handler": "http://backend:8001/trip/start",
           "output_type": "StartTripResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2266,7 +2266,7 @@
       {
         "name": "UpdateDriverCashIn",
         "definition": {
-          "handler": "http://backend:9001/transaction/update-driver-cashin",
+          "handler": "http://backend:8001/transaction/update-driver-cashin",
           "output_type": "UpdateDriverCashInResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2307,7 +2307,7 @@
       {
         "name": "bookTrip",
         "definition": {
-          "handler": "http://backend:9001/trip/book",
+          "handler": "http://backend:8001/trip/book",
           "output_type": "bookTripResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2365,7 +2365,7 @@
       {
         "name": "cancelBooking",
         "definition": {
-          "handler": "http://backend:9001/trip/cancel",
+          "handler": "http://backend:8001/trip/cancel",
           "output_type": "cancelBookingResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2397,7 +2397,7 @@
       {
         "name": "getFileUploadUrl",
         "definition": {
-          "handler": "http://backend:9001/getFileUploadUrl",
+          "handler": "http://backend:8001/getFileUploadUrl",
           "output_type": "fileUploadInfo",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2445,7 +2445,7 @@
       {
         "name": "pickupCustomer",
         "definition": {
-          "handler": "http://backend:9001/trip/pickup",
+          "handler": "http://backend:8001/trip/pickup",
           "output_type": "pickupCustomerResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [
@@ -2477,7 +2477,7 @@
       {
         "name": "rejectBooking",
         "definition": {
-          "handler": "http://backend:9001/trip/reject",
+          "handler": "http://backend:8001/trip/reject",
           "output_type": "rejectBookingResponse",
           "forward_client_headers": true,
           "ignored_client_headers": [

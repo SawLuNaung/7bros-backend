@@ -6,41 +6,14 @@ const jwt = require("jsonwebtoken");
 const {jwtKey, jwtExpTime, jwtSecretKey} = require("../utils/config");
 const {createHasuraJWT, generateDriverId} = require("../utils/helper");
 const {authenticateUserToken} = require("../utils/userMiddleware");
-const { validatePhoneNumber } = require("../utils/validators");
-const rateLimit = require('express-rate-limit');
 var router = express.Router();
 
-// Rate limiting for authentication endpoints
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per windowMs
-    message: {
-        message: "Too many authentication attempts, please try again later",
-        extensions: {
-            code: "RATE_LIMIT_EXCEEDED"
-        }
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-router.post("/signin", authLimiter, async (req, res) => {
+router.post("/signin", async (req, res) => {
     try {
         const {phone, password, fcm_token} = req.body.input;
         
-        // Validate phone number
-        const phoneValidation = validatePhoneNumber(phone);
-        if (!phoneValidation.valid) {
-            return res.status(400).json({
-                message: phoneValidation.message,
-                extensions: {
-                    code: "VALIDATION_ERROR"
-                }
-            });
-        }
-        
-        if (phoneValidation.value && password) {
-            const existingUser = await knex('drivers').where('phone', phoneValidation.value)
+        if (phone && password) {
+            const existingUser = await knex('drivers').where('phone', phone)
             if (existingUser.length === 0) {
                 return res.status(400).json({message: "အကောင့်မရှိပါ"})
             } else {
@@ -73,46 +46,20 @@ router.post("/signin", authLimiter, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in driver endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 
-router.post("/signup", authLimiter, async (req, res) => {
+router.post("/signup", async (req, res) => {
     try {
         const {name, phone, password} = req.body.input;
         
-        // Validate phone number
-        const phoneValidation = validatePhoneNumber(phone);
-        if (!phoneValidation.valid) {
-            return res.status(400).json({
-                message: phoneValidation.message,
-                extensions: {
-                    code: "VALIDATION_ERROR"
-                }
-            });
-        }
-        
-        if (name && phoneValidation.value && password) {
-            const existingUser = await knex('drivers').where('phone', phoneValidation.value)
+        if (name && phone && password) {
+            const existingUser = await knex('drivers').where('phone', phone)
             if (existingUser.length !== 0) {
                 return res.status(401).json({message: "အကောင့်ရှိပြီးသားပါ"})
             } else {
                 const existingDriverId = await knex('drivers').orderBy('driver_id', 'desc').limit(1).select('driver_id').first()
-                
-                if (!existingDriverId || !existingDriverId.driver_id) {
-                    return res.status(500).json({
-                        message: "Unable to generate driver ID",
-                        extensions: {
-                            code: "INTERNAL_ERROR"
-                        }
-                    });
-                }
-                
                 const hashedPassword = await bcrypt.hash(password, 10)
                 await knex('drivers').insert({
                     ...req.body.input,
@@ -127,12 +74,7 @@ router.post("/signup", authLimiter, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in driver endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 
@@ -163,12 +105,7 @@ router.post("/update-password", authenticateUserToken, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in driver endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 

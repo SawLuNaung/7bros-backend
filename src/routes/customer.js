@@ -4,41 +4,14 @@ const {compare} = require("bcryptjs");
 const bcrypt = require("bcryptjs");
 const {createHasuraJWT} = require("../utils/helper");
 const {authenticateUserToken} = require("../utils/userMiddleware");
-const {validatePhoneNumber} = require("../utils/validators");
-const rateLimit = require('express-rate-limit');
 var router = express.Router();
 
-// Rate limiting for authentication endpoints
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per windowMs
-    message: {
-        message: "Too many authentication attempts, please try again later",
-        extensions: {
-            code: "RATE_LIMIT_EXCEEDED"
-        }
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-router.post("/signin", authLimiter, async (req, res) => {
+router.post("/signin", async (req, res) => {
     try {
         const {phone, password, fcm_token} = req.body.input;
         
-        // Validate phone number
-        const phoneValidation = validatePhoneNumber(phone);
-        if (!phoneValidation.valid) {
-            return res.status(400).json({
-                message: phoneValidation.message,
-                extensions: {
-                    code: "VALIDATION_ERROR"
-                }
-            });
-        }
-        
-        if (phoneValidation.value && password) {
-            const existingUser = await knex('customers').where('phone', phoneValidation.value)
+        if (phone && password) {
+            const existingUser = await knex('customers').where('phone', phone)
             if (existingUser.length === 0) {
                 return res.status(400).json({message: "user doesn't exists"})
             } else {
@@ -62,27 +35,22 @@ router.post("/signin", authLimiter, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in customer endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 
-router.post("/signup", authLimiter, async (req, res) => {
+router.post("/signup", async (req, res) => {
     try {
         const {name, phone, password, profile_picture_url, fcm_token} = req.body.input;
         if (name && phone && password) {
-            const existingUser = await knex('customers').where('phone', phoneValidation.value)
+            const existingUser = await knex('customers').where('phone', phone)
             if (existingUser.length !== 0) {
                 return res.status(401).json({message: "customer already exists"})
             } else {
                 const hashedPassword = await bcrypt.hash(password, 10)
                 const createdUser = await knex('customers').insert({
                     name,
-                    phone: phoneValidation.value,
+                    phone,
                     password: hashedPassword,
                     fcm_token,
                     profile_picture_url
@@ -95,12 +63,7 @@ router.post("/signup", authLimiter, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in customer endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 
@@ -130,12 +93,7 @@ router.post("/update-password", authenticateUserToken, async (req, res) => {
         }
     } catch (e) {
         console.error("Error in customer endpoint:", e);
-        return res.status(500).json({
-            message: "Internal server error",
-            extensions: {
-                code: "INTERNAL_ERROR"
-            }
-        });
+        return res.status(500).json({message: "Internal server error"});
     }
 })
 
