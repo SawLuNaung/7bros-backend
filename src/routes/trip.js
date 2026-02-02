@@ -173,23 +173,88 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             gps_gaps,
             gps_gap_details,
         } = req.body.input;
+        
+        // Validate coordinates (if provided)
+        let validatedEndLat = null;
+        let validatedEndLng = null;
+        if (end_lat != null && end_lng != null) {
+            const coordValidation = validateCoordinates(end_lat, end_lng);
+            if (!coordValidation.valid) {
+                return res.status(400).json({
+                    message: coordValidation.message,
+                    extensions: {
+                        code: "VALIDATION_ERROR"
+                    }
+                });
+            }
+            validatedEndLat = coordValidation.lat;
+            validatedEndLng = coordValidation.lng;
+        }
+        
+        // Validate distance
+        const distanceValidation = validateDistance(distance, { min: 0, max: 1000 });
+        if (!distanceValidation.valid) {
+            return res.status(400).json({
+                message: distanceValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        // Validate duration
+        const durationValidation = validateDuration(duration, { min: 0, max: 86400 });
+        if (!durationValidation.valid) {
+            return res.status(400).json({
+                message: durationValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        // Validate waiting time
+        const waitingTimeValidation = validateDuration(waiting_time, { min: 0, max: 3600 }); // Max 1 hour waiting
+        if (!waitingTimeValidation.valid) {
+            return res.status(400).json({
+                message: waitingTimeValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
+        // Validate extra fee
+        const extraFeeValidation = validateNumeric(extra_fee, "Extra fee", { min: 0, max: 100000 });
+        if (!extraFeeValidation.valid) {
+            return res.status(400).json({
+                message: extraFeeValidation.message,
+                extensions: {
+                    code: "VALIDATION_ERROR"
+                }
+            });
+        }
+        
         const parsed = {
-            distance: Number(distance),
-            duration: Number(duration),
-            waiting_time: Number(waiting_time),
-            extra_fee: Number(extra_fee),
+            distance: distanceValidation.value,
+            duration: durationValidation.value,
+            waiting_time: waitingTimeValidation.value,
+            extra_fee: extraFeeValidation.value,
         }
-        if ([parsed.distance, parsed.duration, parsed.waiting_time, parsed.extra_fee].some(v => Number.isNaN(v))) {
-            return res.status(400).json({message: "invalid numeric fields"})
-        }
+        
         const activeBooking = await knex('bookings').where('driver_id', user_id).where('status', "on trip").first()
         if (activeBooking) {
             const feeConfigs = await knex('fee_configs').first()
+            if (!feeConfigs) {
+                return res.status(500).json({message: "Fee configuration not found"})
+            }
             const geoData = (validatedEndLat != null && validatedEndLng != null) ? await reverseGeocode(validatedEndLat, validatedEndLng) : {results: []};
 
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
 
-            const distanceFee = calculateDistanceFee(parsed.distance, feeConfigs)
+            // Convert distance from meters to kilometers
+            const distanceInKm = parsed.distance / 1000;
+            const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
 
 
             const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
@@ -222,7 +287,7 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 extra_fee: parsed.extra_fee,
                 waiting_fee,
                 total_amount: customer_total,
-                distance_km: parsed.distance,
+                distance_km: distanceInKm,
                 duration_sec: parsed.duration,
                 waiting_time_sec: parsed.waiting_time,
                 status: "finished",
@@ -551,8 +616,9 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             // Calculate waiting fee (only charge after free waiting minutes)
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
 
-            // Calculate distance fee
-            const distanceFee = calculateDistanceFee(parsed.distance, feeConfigs)
+            // Calculate distance fee - convert distance from meters to kilometers
+            const distanceInKm = parsed.distance / 1000;
+            const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
 
             // Calculate totals
             const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
@@ -594,7 +660,7 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 extra_fee: parsed.extra_fee,
                 waiting_fee,
                 total_amount: customer_total,
-                distance_km: parsed.distance,
+                distance_km: distanceInKm,
                 duration_sec: parsed.duration,
                 waiting_time_sec: parsed.waiting_time,
                 status: "finished",
