@@ -188,17 +188,17 @@ function validatePhoneNumber(phone) {
 }
 
 /**
- * Validate distance (in kilometers)
- * @param {any} distance - Distance to validate
+ * Validate distance (in meters)
+ * @param {any} distance - Distance to validate (in meters)
  * @param {Object} options - Validation options
- * @param {number} options.min - Minimum distance (default: 0)
- * @param {number} options.max - Maximum distance (default: 1000)
+ * @param {number} options.min - Minimum distance in meters (default: 0)
+ * @param {number} options.max - Maximum distance in meters (default: 1000000 = 1000 km)
  * @returns {Object} {valid: boolean, message?: string, value?: number}
  */
 function validateDistance(distance, options = {}) {
     const {
         min = 0,
-        max = 1000
+        max = 1000000  // 1000 km in meters
     } = options;
 
     if (distance === null || distance === undefined || distance === '') {
@@ -220,14 +220,14 @@ function validateDistance(distance, options = {}) {
     if (numDistance < min) {
         return {
             valid: false,
-            message: `Distance must be at least ${min} km`
+            message: `Distance must be at least ${min} meters`
         };
     }
 
     if (numDistance > max) {
         return {
             valid: false,
-            message: `Distance cannot exceed ${max} km`
+            message: `Distance cannot exceed ${max} meters (${max / 1000} km)`
         };
     }
 

@@ -6,7 +6,7 @@ const {
     generateTripId,
     getDecimalPlaces,
     calculateCommissionFee,
-    calculateDriverReceivedAmount, generateTransactionNumber, findNearestDriver, sendNoti, calculateDistanceFee
+    calculateDriverReceivedAmount, generateTransactionNumber, findNearestDriver, sendNoti, calculateDistanceFee, getApplicableTimeFee
 } = require("../utils/helper");
 const {
     validateCoordinates,
@@ -191,8 +191,8 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             validatedEndLng = coordValidation.lng;
         }
         
-        // Validate distance
-        const distanceValidation = validateDistance(distance, { min: 0, max: 1000 });
+        // Validate distance (mobile app sends distance in meters)
+        const distanceValidation = validateDistance(distance, { min: 0, max: 1000000 }); // max: 1000 km in meters
         if (!distanceValidation.valid) {
             return res.status(400).json({
                 message: distanceValidation.message,
@@ -236,7 +236,7 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
         }
         
         const parsed = {
-            distance: distanceValidation.value,
+            distance: distanceValidation.value, // distance in meters
             duration: durationValidation.value,
             waiting_time: waitingTimeValidation.value,
             extra_fee: extraFeeValidation.value,
@@ -248,24 +248,57 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             if (!feeConfigs) {
                 return res.status(500).json({message: "Fee configuration not found"})
             }
+            
+            // Load time-based fees for this fee config
+            const timeBasedFees = await knex('time_based_fee')
+                .where('fee_config_id', feeConfigs.id)
+                .select('*');
+            
+            console.log(`Loaded ${timeBasedFees.length} time-based fee(s) for fee config ${feeConfigs.id}`);
+            
             const geoData = (validatedEndLat != null && validatedEndLng != null) ? await reverseGeocode(validatedEndLat, validatedEndLng) : {results: []};
+
+            // Ensure started_at is preserved if it exists, otherwise set it from created_at
+            const endTime = new Date();
+            const existingTrip = await knex('trips').where('id', activeBooking.trip_id).first();
+            const startedAtValue = existingTrip?.started_at || existingTrip?.created_at;
+            
+            // Get trip start time for time-based fee calculation
+            const tripStartTime = startedAtValue || existingTrip?.created_at;
+            
+            // Calculate applicable time-based fee based on trip start time
+            const applicableTimeFee = getApplicableTimeFee(tripStartTime, timeBasedFees);
+            
+            // Adjust initial fee with time-based fee
+            const baseInitialFee = Number(feeConfigs.initial_fee);
+            const adjustedInitialFee = baseInitialFee + applicableTimeFee;
+            
+            console.log("Time-based fee calculation (booked trip):", {
+                tripStartTime: tripStartTime,
+                baseInitialFee: baseInitialFee,
+                applicableTimeFee: applicableTimeFee,
+                adjustedInitialFee: adjustedInitialFee
+            });
 
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
 
             // Convert distance from meters to kilometers
             const distanceInKm = parsed.distance / 1000;
             const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
+            
+            // Debug logging for distance calculation
+            console.log("Distance calculation (end-booked-trip):", {
+                rawInput: distance,
+                validatedDistanceMeters: parsed.distance,
+                convertedDistanceKm: distanceInKm,
+                distanceFee: distanceFee
+            });
 
-
-            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
-            const customer_total = Number(feeConfigs.initial_fee) + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
+            // Calculate totals using adjusted initial fee
+            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + adjustedInitialFee, 0)
+            const customer_total = adjustedInitialFee + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
             const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
             const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
-
-            // Ensure started_at is preserved if it exists, otherwise set it from created_at
-            const endTime = new Date();
-            const existingTrip = await knex('trips').where('id', activeBooking.trip_id).first();
-            const startedAtValue = existingTrip?.started_at || existingTrip?.created_at;
             console.log("Ending booked trip - started_at before update:", existingTrip?.started_at);
             console.log("Ending booked trip - setting ended_at to:", endTime);
             
@@ -277,7 +310,7 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 free_waiting_minute: feeConfigs.free_waiting_minute,
                 waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
                 distance_fee_per_km: feeConfigs.distance_fee_per_km,
-                initial_fee: feeConfigs.initial_fee,
+                initial_fee: baseInitialFee, // Store base initial fee
                 platform_fee: feeConfigs.platform_fee,
                 insurance_fee: feeConfigs.insurance_fee,
                 commission_rate_type: feeConfigs.commission_rate_type,
@@ -298,6 +331,17 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 started_at: startedAtValue, // Preserve or set started_at
                 ended_at: endTime
             }).where('id', activeBooking.trip_id).returning('*')
+            
+            // Store time-based fee separately if column exists (for audit trail)
+            // Note: This assumes the column exists. If not, it will be ignored gracefully.
+            try {
+                await knex('trips').where('id', activeBooking.trip_id).update({
+                    time_based_fee: applicableTimeFee
+                });
+            } catch (e) {
+                // Column might not exist, log but don't fail
+                console.log("Note: time_based_fee column may not exist in trips table:", e.message);
+            }
             
             console.log("Booked trip updated - started_at after update:", updatedTrip[0].started_at);
             console.log("Booked trip updated - ended_at after update:", updatedTrip[0].ended_at);
@@ -351,6 +395,9 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 detail_id: activeBooking.trip_id
             })
             console.log("EndBookedTrip calculated fees:", {
+                baseInitialFee: baseInitialFee,
+                applicableTimeFee: applicableTimeFee,
+                adjustedInitialFee: adjustedInitialFee,
                 waiting_fee,
                 distanceFee,
                 driver_total,
@@ -369,7 +416,8 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
                 waiting_fee: Number(waiting_fee),
                 distance_fee: Number(distanceFee),
                 extra_fee: Number(parsed.extra_fee),
-                initial_fee: Number(feeConfigs.initial_fee),
+                initial_fee: Number(baseInitialFee), // Base initial fee (without time-based fee)
+                time_based_fee: Number(applicableTimeFee), // Time-based fee applied
                 platform_fee: Number(feeConfigs.platform_fee),
                 insurance_fee: Number(feeConfigs.insurance_fee)
             };
@@ -548,8 +596,8 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             validatedEndLng = coordValidation.lng;
         }
         
-        // Validate distance
-        const distanceValidation = validateDistance(distance, { min: 0, max: 1000 });
+        // Validate distance (mobile app sends distance in meters)
+        const distanceValidation = validateDistance(distance, { min: 0, max: 1000000 }); // max: 1000 km in meters
         if (!distanceValidation.valid) {
             return res.status(400).json({
                 message: distanceValidation.message,
@@ -593,7 +641,7 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
         }
         
         const parsed = {
-            distance: distanceValidation.value,
+            distance: distanceValidation.value, // distance in meters
             duration: durationValidation.value,
             waiting_time: waitingTimeValidation.value,
             extra_fee: extraFeeValidation.value,
@@ -611,7 +659,31 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 return res.status(500).json({message: "Fee configuration not found"})
             }
             
+            // Load time-based fees for this fee config
+            const timeBasedFees = await knex('time_based_fee')
+                .where('fee_config_id', feeConfigs.id)
+                .select('*');
+            
+            console.log(`Loaded ${timeBasedFees.length} time-based fee(s) for fee config ${feeConfigs.id}`);
+            
             const geoData = (validatedEndLat != null && validatedEndLng != null) ? await reverseGeocode(validatedEndLat, validatedEndLng) : {results: []};
+
+            // Get trip start time for time-based fee calculation
+            const tripStartTime = activeTrip.started_at || activeTrip.created_at;
+            
+            // Calculate applicable time-based fee based on trip start time
+            const applicableTimeFee = getApplicableTimeFee(tripStartTime, timeBasedFees);
+            
+            // Adjust initial fee with time-based fee
+            const baseInitialFee = Number(feeConfigs.initial_fee);
+            const adjustedInitialFee = baseInitialFee + applicableTimeFee;
+            
+            console.log("Time-based fee calculation:", {
+                tripStartTime: tripStartTime,
+                baseInitialFee: baseInitialFee,
+                applicableTimeFee: applicableTimeFee,
+                adjustedInitialFee: adjustedInitialFee
+            });
 
             // Calculate waiting fee (only charge after free waiting minutes)
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
@@ -619,14 +691,25 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             // Calculate distance fee - convert distance from meters to kilometers
             const distanceInKm = parsed.distance / 1000;
             const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
+            
+            // Debug logging for distance calculation
+            console.log("Distance calculation (end):", {
+                rawInput: distance,
+                validatedDistanceMeters: parsed.distance,
+                convertedDistanceKm: distanceInKm,
+                distanceFee: distanceFee
+            });
 
-            // Calculate totals
-            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.initial_fee), 0)
-            const customer_total = Number(feeConfigs.initial_fee) + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
+            // Calculate totals using adjusted initial fee
+            const driver_total = getDecimalPlaces(distanceFee + waiting_fee + parsed.extra_fee + adjustedInitialFee, 0)
+            const customer_total = adjustedInitialFee + distanceFee + waiting_fee + parsed.extra_fee + Number(feeConfigs.insurance_fee) + Number(feeConfigs.platform_fee)
             const commission_fee = getDecimalPlaces(calculateCommissionFee(driver_total, feeConfigs), 0)
             const driver_received_amount = getDecimalPlaces(calculateDriverReceivedAmount(driver_total, feeConfigs), 0)
 
             console.log("Calculated fees:", {
+                baseInitialFee: baseInitialFee,
+                applicableTimeFee: applicableTimeFee,
+                adjustedInitialFee: adjustedInitialFee,
                 waiting_fee,
                 distanceFee,
                 driver_total,
@@ -650,7 +733,7 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 free_waiting_minute: feeConfigs.free_waiting_minute,
                 waiting_fee_per_minute: feeConfigs.waiting_fee_per_minute,
                 distance_fee_per_km: feeConfigs.distance_fee_per_km,
-                initial_fee: feeConfigs.initial_fee,
+                initial_fee: baseInitialFee, // Store base initial fee
                 platform_fee: feeConfigs.platform_fee,
                 insurance_fee: feeConfigs.insurance_fee,
                 commission_rate_type: feeConfigs.commission_rate_type,
@@ -671,6 +754,17 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 started_at: startedAtValue, // Preserve or set started_at
                 ended_at: endTime
             }).where('id', activeTrip.id).returning('*')
+            
+            // Store time-based fee separately if column exists (for audit trail)
+            // Note: This assumes the column exists. If not, it will be ignored gracefully.
+            try {
+                await knex('trips').where('id', activeTrip.id).update({
+                    time_based_fee: applicableTimeFee
+                });
+            } catch (e) {
+                // Column might not exist, log but don't fail
+                console.log("Note: time_based_fee column may not exist in trips table:", e.message);
+            }
             
             console.log("Trip updated - started_at after update:", updatedTrip[0].started_at);
             console.log("Trip updated - ended_at after update:", updatedTrip[0].ended_at);
@@ -736,7 +830,8 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
                 waiting_fee: Number(waiting_fee),
                 distance_fee: Number(distanceFee),
                 extra_fee: Number(parsed.extra_fee),
-                initial_fee: Number(feeConfigs.initial_fee),
+                initial_fee: Number(baseInitialFee), // Base initial fee (without time-based fee)
+                time_based_fee: Number(applicableTimeFee), // Time-based fee applied
                 platform_fee: Number(feeConfigs.platform_fee),
                 insurance_fee: Number(feeConfigs.insurance_fee)
             };
