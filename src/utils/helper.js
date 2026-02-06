@@ -222,6 +222,73 @@ const calculateDistanceFee = (distance, feeConfigs) => {
     }
 };
 
+/**
+ * Get applicable time-based fee for a given trip start time
+ * @param {Date} tripStartTime - Trip start timestamp
+ * @param {Array} timeBasedFees - Array of time-based fee objects with start_hour, end_hour, fee
+ * @returns {number} - Applicable fee amount (0 if no match)
+ */
+function getApplicableTimeFee(tripStartTime, timeBasedFees = []) {
+    if (!tripStartTime || !timeBasedFees || timeBasedFees.length === 0) {
+        return 0;
+    }
+    
+    // Ensure tripStartTime is a Date object
+    const tripDate = tripStartTime instanceof Date ? tripStartTime : new Date(tripStartTime);
+    
+    // Extract hour:minute from trip start time (in local timezone)
+    const tripHour = tripDate.getHours();
+    const tripMinute = tripDate.getMinutes();
+    const tripMinutes = tripHour * 60 + tripMinute;
+    
+    // Check each time-based fee slot
+    for (const fee of timeBasedFees) {
+        if (!fee.start_hour || !fee.end_hour) continue;
+        
+        // Parse time strings - handle both "HH:MM:SS" and "HH:MM" formats
+        // Also handle timezone strings like "18:00:00+06:30"
+        let startTimeStr = fee.start_hour.toString();
+        let endTimeStr = fee.end_hour.toString();
+        
+        // Remove timezone if present (e.g., "18:00:00+06:30" -> "18:00:00")
+        if (startTimeStr.includes('+')) {
+            startTimeStr = startTimeStr.split('+')[0];
+        }
+        if (endTimeStr.includes('+')) {
+            endTimeStr = endTimeStr.split('+')[0];
+        }
+        
+        // Parse hours and minutes
+        const startParts = startTimeStr.split(":").map(Number);
+        const endParts = endTimeStr.split(":").map(Number);
+        
+        const startMinutes = startParts[0] * 60 + (startParts[1] || 0);
+        const endMinutes = endParts[0] * 60 + (endParts[1] || 0);
+        
+        // Check if trip start time falls within this slot
+        // Handle both normal slots (start < end) and overnight slots (start > end)
+        // Example: 18:00-20:00 (normal) or 22:00-06:00 (overnight)
+        let isWithinSlot = false;
+        
+        if (startMinutes <= endMinutes) {
+            // Normal slot: start time is before end time (e.g., 18:00-20:00)
+            isWithinSlot = tripMinutes >= startMinutes && tripMinutes < endMinutes;
+        } else {
+            // Overnight slot: start time is after end time (e.g., 22:00-06:00)
+            // Trip is within slot if it's >= start OR < end
+            isWithinSlot = tripMinutes >= startMinutes || tripMinutes < endMinutes;
+        }
+        
+        if (isWithinSlot) {
+            const feeAmount = Number(fee.fee) || 0;
+            console.log(`Time-based fee applied: ${feeAmount} kyats for slot ${startTimeStr}-${endTimeStr} (trip started at ${tripHour}:${tripMinute.toString().padStart(2, '0')})`);
+            return feeAmount;
+        }
+    }
+    
+    return 0;
+}
+
 module.exports = {
     createHasuraJWT,
     fetchGraphqlApi,
@@ -234,5 +301,6 @@ module.exports = {
     findNearestDriver,
     calculateDriverReceivedAmount,
     getDecimalPlaces,
-    reverseGeocode
+    reverseGeocode,
+    getApplicableTimeFee
 }
