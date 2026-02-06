@@ -191,8 +191,8 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
             validatedEndLng = coordValidation.lng;
         }
 
-        // Validate distance (mobile app sends distance in meters)
-        const distanceValidation = validateDistance(distance, { min: 0, max: 1000000 }); // max: 1000 km in meters
+        // Validate distance (mobile app sends distance in kilometers)
+        const distanceValidation = validateDistance(distance, { min: 0, max: 1000 }); // max: 1000 km
         if (!distanceValidation.valid) {
             return res.status(400).json({
                 message: distanceValidation.message,
@@ -236,7 +236,7 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
         }
 
         const parsed = {
-            distance: distanceValidation.value, // distance in meters
+            distance: distanceValidation.value, // distance in kilometers
             duration: durationValidation.value,
             waiting_time: waitingTimeValidation.value,
             extra_fee: extraFeeValidation.value,
@@ -282,15 +282,15 @@ router.post("/end-booked-trip", authenticateDriverToken, async (req, res) => {
 
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
 
-            // Convert distance from meters to kilometers
-            const distanceInKm = parsed.distance / 1000;
+            // Distance from mobile is already in kilometers
+            const distanceInKm = parsed.distance;
             const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
 
             // Debug logging for distance calculation
             console.log("Distance calculation (end-booked-trip):", {
                 rawInput: distance,
-                validatedDistanceMeters: parsed.distance,
-                convertedDistanceKm: distanceInKm,
+                validatedDistanceKm: parsed.distance,
+                distanceInKm: distanceInKm,
                 distanceFee: distanceFee
             });
 
@@ -596,8 +596,8 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             validatedEndLng = coordValidation.lng;
         }
 
-        // Validate distance (mobile app sends distance in meters)
-        const distanceValidation = validateDistance(distance, { min: 0, max: 1000000 }); // max: 1000 km in meters
+        // Validate distance (mobile app sends distance in kilometers)
+        const distanceValidation = validateDistance(distance, { min: 0, max: 1000 }); // max: 1000 km
         if (!distanceValidation.valid) {
             return res.status(400).json({
                 message: distanceValidation.message,
@@ -641,7 +641,7 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
         }
 
         const parsed = {
-            distance: distanceValidation.value, // distance in meters
+            distance: distanceValidation.value, // distance in kilometers
             duration: durationValidation.value,
             waiting_time: waitingTimeValidation.value,
             extra_fee: extraFeeValidation.value,
@@ -698,15 +698,15 @@ router.post("/end", authenticateDriverToken, async (req, res) => {
             // Calculate waiting fee (only charge after free waiting minutes)
             const waiting_fee = (Math.max(0, (Math.floor(parsed.waiting_time / 60)) - feeConfigs.free_waiting_minute)) * feeConfigs.waiting_fee_per_minute
 
-            // Calculate distance fee - convert distance from meters to kilometers
-            const distanceInKm = parsed.distance / 1000;
+            // Distance from mobile is already in kilometers
+            const distanceInKm = parsed.distance;
             const distanceFee = calculateDistanceFee(distanceInKm, feeConfigs)
 
             // Debug logging for distance calculation
             console.log("Distance calculation (end):", {
                 rawInput: distance,
-                validatedDistanceMeters: parsed.distance,
-                convertedDistanceKm: distanceInKm,
+                validatedDistanceKm: parsed.distance,
+                distanceInKm: distanceInKm,
                 distanceFee: distanceFee
             });
 
