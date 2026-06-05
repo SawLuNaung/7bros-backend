@@ -34,7 +34,7 @@ router.post("/signin",  async (req, res) => {
                     // 'staff' DB role → 'staff' Hasura role (limited access)
                     // Note: We use 'super_admin' instead of 'admin' because Hasura's built-in
                     // 'admin' role bypasses all permissions and requires admin secret
-                    const hasuraRole = adminRole === 'admin' ? 'super_admin' : 'staff';
+                    const hasuraRole = adminRole === 'admin' ? 'admin' : 'staff';
                     
                     // Create JWT with both hasura role and admin role
                     const token = createHasuraJWT(existingUser[0].id, hasuraRole, adminRole)
